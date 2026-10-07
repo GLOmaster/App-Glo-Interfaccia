@@ -350,11 +350,11 @@
         
         <div class="section">
             <label>Operatore</label>
-            <!-- CAMPO OPERATORE: Tornato a box di testo libero -->
+            <!-- CAMPO OPERATORE: Testo libero (no tendina, no blocchi) -->
             <input type="text" id="tab_operatore" placeholder="Tuo Nome" oninput="salvaOperatore(this.value)">
 
             <label>Locale</label>
-            <!-- CAMPO LOCALE: Aggiunta la tendina personalizzata Fuzzy -->
+            <!-- CAMPO LOCALE: Tendina personalizzata e intelligente -->
             <div class="autocomplete-container">
                 <input type="text" id="tab_locale" class="autocomplete-input" autocomplete="off" placeholder="Inizia a digitare..." oninput="filtraSuggerimenti(this, 'locale')" onfocus="filtraSuggerimenti(this, 'locale')">
                 <div class="autocomplete-list"></div>
@@ -427,7 +427,7 @@
         
         <div class="section">
             <label>Operatore</label>
-            <!-- CAMPO OPERATORE RAV: Tornato a box di testo libero -->
+            <!-- CAMPO OPERATORE RAV: Testo libero -->
             <input type="text" id="rav_operatore" placeholder="Tuo Nome" oninput="salvaOperatore(this.value)">
 
             <label>Numero Promoter in turno</label>
@@ -445,15 +445,42 @@
         <button class="btn-rav" onclick="avviaRav()">🚀 Avvia RAV (Multiplo)</button>
         <button class="btn-stop" onclick="fermaBot('bot-rav.yml', 'RAV')">🛑 STOP EMERGENZA GENERALE</button>
 
-        <!-- Liste Nascoste (Usate solo come database per Javascript, invisibili all'utente) -->
+        <!-- DATABASE NASCOSTO: I DATI REALI (Invisibili all'utente) -->
         <div style="display:none;">
-            <!-- INSERISCI QUI I LOCALI COME FAI PER I PROMOTER -->
             <datalist id="lista-locali">
                 <option value="AI BOTTAI"></option>
-                <option value="CAFFE ROMA"></option>
-                <option value="BAR CENTRALE"></option>
-                <option value="DISCOTECA METROPOLIS"></option>
-                <option value="PUB IL GATTO NERO"></option>
+                <option value="Formazione"></option>
+                <option value="Formazione_2"></option>
+                <option value="Formazione_3"></option>
+                <option value="Formazione_4"></option>
+                <option value="SIRENETTA"></option>
+                <option value="SOUTH ADDAURA"></option>
+                <option value="THE BEACH CLUB"></option>
+                <option value="PIER THE ROOF"></option>
+                <option value="BASE"></option>
+                <option value="Plait Mare"></option>
+                <option value="Oazi"></option>
+                <option value="Duchi"></option>
+                <option value="Tennis Club"></option>
+                <option value="Mercatali"></option>
+                <option value="Horizon"></option>
+                <option value="Bar Duomo"></option>
+                <option value="Bellavita"></option>
+                <option value="Sentaku"></option>
+                <option value="Margherita"></option>
+                <option value="Lux"></option>
+                <option value="Bloom"></option>
+                <option value="Mercato delle erbe"></option>
+                <option value="Donkey"></option>
+                <option value="Pineta"></option>
+                <option value="Darsena"></option>
+                <option value="Indaco"></option>
+                <option value="Ebrezze"></option>
+                <option value="Mambo"></option>
+                <option value="Bicho Papao"></option>
+                <option value="Aria Beach 44"></option>
+                <option value="Draw"></option>
+                <option value="Scuderie"></option>
             </datalist>
 
             <datalist id="lista-promoter">
@@ -1035,7 +1062,7 @@
                 var div = document.createElement('div');
                 div.className = 'section dynamic-section';
                 
-                // CAMPO PROMOTER: Inserita tendina custom (niente blocco tastiera)
+                // CAMPO PROMOTER: Tendina custom integrata (nessun blocco tastiera)
                 div.innerHTML = '<h4 style="margin-top:0; margin-bottom: 10px; color:#10b981; font-size: 18px; font-weight: 700;">🧑‍💼 Promoter ' + i + '</h4>' +
                     '<label>Nome Promoter</label>' +
                     '<div class="autocomplete-container">' +
