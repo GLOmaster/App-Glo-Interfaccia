@@ -476,4 +476,375 @@
             <option value="Margherita Piazza"></option>
             <option value="Mailen Delaini"></option>
             <option value="Yasmine Razuoali"></option>
-            <!--
+            <!-- TRENTO -->
+            <option value="Angelica Chini"></option>
+            <option value="Virginia Milani"></option>
+            <option value="Elia Borolameotti"></option>
+            <option value="Camilla Mele Cortese"></option>
+            <option value="Sara Sevignani"></option>
+            <option value="Arianna Bertuol"></option>
+            <option value="Piercarlo Vardanega"></option>
+            <option value="Elena Nardin"></option>
+            <option value="Marco Dalla Benedetta"></option>
+            <option value="Irene Cirivello"></option>
+            <option value="Alice Giovane"></option>
+            <option value="Alice"></option>
+            <option value="Amelia"></option>
+        </datalist>
+    </div>
+
+    <!-- SCRIPT INTELLIGENTE CON ANTI-SPRECO -->
+    <script>
+        let GITHUB_TOKEN = localStorage.getItem('gh_token');
+        let GITHUB_USER = localStorage.getItem('gh_user') || ""; 
+        const GITHUB_REPO = "BOT"; 
+
+        // Avvio e Memoria Operatore
+        window.onload = async function() {
+            if(!GITHUB_TOKEN) {
+                let tokenInserito = prompt("Primo avvio: Inserisci il tuo Token GitHub per collegare l'app.");
+                if(tokenInserito) {
+                    GITHUB_TOKEN = tokenInserito.trim();
+                    localStorage.setItem('gh_token', GITHUB_TOKEN);
+                } else {
+                    alert("Attenzione: Senza token l'app non funzionerà.");
+                }
+            }
+            if(GITHUB_TOKEN) await verificaConnessione();
+
+            // Carica Operatore Salvato
+            let savedOp = localStorage.getItem('saved_operatore') || "";
+            if(savedOp) {
+                document.getElementById('tab_operatore').value = savedOp;
+                document.getElementById('rav_operatore').value = savedOp;
+            }
+        };
+
+        function vibraErrore() {
+            if ("vibrate" in navigator) navigator.vibrate([200, 100, 200]);
+        }
+
+        function salvaOperatore(valore) {
+            localStorage.setItem('saved_operatore', valore);
+            document.getElementById('tab_operatore').value = valore;
+            document.getElementById('rav_operatore').value = valore;
+        }
+
+        function resetToken() {
+            let nuovoToken = prompt("Inserisci il nuovo Token GitHub:");
+            if(nuovoToken) {
+                GITHUB_TOKEN = nuovoToken.trim();
+                localStorage.setItem('gh_token', GITHUB_TOKEN);
+                localStorage.removeItem('gh_user'); 
+                verificaConnessione();
+            }
+        }
+
+        async function verificaConnessione() {
+            if(!GITHUB_TOKEN) return;
+            const divStato = document.getElementById('stato-connessione');
+            
+            divStato.innerText = "Sincronizzazione in corso...";
+            divStato.style.color = "#fbbf24";
+
+            try {
+                const userRes = await fetch("https://api.github.com/user", {
+                    headers: { 'Authorization': `Bearer ${GITHUB_TOKEN}` }
+                });
+                
+                if(!userRes.ok) {
+                    divStato.innerText = "❌ Errore: Token non valido.";
+                    divStato.style.color = "#ef4444";
+                    return;
+                }
+                
+                const userData = await userRes.json();
+                GITHUB_USER = userData.login; 
+                localStorage.setItem('gh_user', GITHUB_USER);
+                divStato.innerText = `✅ Connesso come: ${GITHUB_USER}`;
+                divStato.style.color = "#10b981";
+
+            } catch(e) {
+                divStato.innerText = "❌ Offline (Verifica Rete)";
+                divStato.style.color = "#ef4444";
+            }
+        }
+
+        // --- MONITOR DI SISTEMA (AGGIORNATO CON NOME OPERATORE) ---
+        async function caricaMonitor() {
+            if(!GITHUB_TOKEN || !GITHUB_USER) return;
+            const container = document.getElementById('monitor-lista');
+            container.innerHTML = '<p style="text-align:center; color:#38bdf8; font-size:14px;">📡 Contattando il server...</p>';
+            
+            try {
+                const url = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/actions/runs?per_page=8`;
+                const res = await fetch(url, {
+                    headers: { 'Authorization': `Bearer ${GITHUB_TOKEN}` }
+                });
+                
+                if(res.ok) {
+                    const data = await res.json();
+                    const runs = data.workflow_runs;
+                    
+                    if(runs.length === 0) {
+                        container.innerHTML = '<p style="text-align:center; color:#cbd5e1; font-size:14px;">Nessun bot avviato di recente.</p>';
+                        return;
+                    }
+                    
+                    let html = '';
+                    for(let run of runs) {
+                        let icona = '⏳';
+                        let colore = '#fbbf24'; 
+                        let statoTxt = 'In Coda';
+                        
+                        if(run.status === 'in_progress') { 
+                            icona = '🔄'; colore = '#38bdf8'; statoTxt = 'In Esecuzione'; 
+                        } else if(run.status === 'completed') {
+                            if(run.conclusion === 'success') { icona = '✅'; colore = '#10b981'; statoTxt = 'Completato'; }
+                            else { icona = '❌'; colore = '#ef4444'; statoTxt = 'Fallito'; }
+                        }
+                        
+                        const d = new Date(run.created_at);
+                        const nomeData = `${("0"+d.getDate()).slice(-2)}/${("0"+(d.getMonth()+1)).slice(-2)} ${("0"+d.getHours()).slice(-2)}:${("0"+d.getMinutes()).slice(-2)}`;
+                        
+                        // Utilizza il titolo dinamico per mostrare l'Operatore (vedi istruzioni YML)
+                        let operatoreTesto = run.display_title;
+
+                        html += `
+                        <div class="run-card" style="border-left: 4px solid ${colore};">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <strong style="color: #f8fafc; font-size: 15px;">${run.name}</strong>
+                                <span style="font-size: 12px; color: #cbd5e1;">${nomeData}</span>
+                            </div>
+                            <div style="font-size: 13px; color: #94a3b8; margin-top: 4px;">
+                                👤 Operatore: <strong style="color: #cbd5e1;">${operatoreTesto}</strong>
+                            </div>
+                            <div style="margin-top: 8px; font-size: 14px; font-weight: 600; color: ${colore};">
+                                ${icona} ${statoTxt}
+                            </div>
+                        </div>`;
+                    }
+                    container.innerHTML = html;
+                } else {
+                    container.innerHTML = '<p style="text-align:center; color:#ef4444; font-size:14px;">Errore API nel caricamento.</p>';
+                }
+            } catch(e) {
+                container.innerHTML = '<p style="text-align:center; color:#ef4444; font-size:14px;">Errore di rete.</p>';
+            }
+        }
+
+        // Navigazione
+        function mostraSchermata(idSchermata) {
+            document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
+            document.getElementById(idSchermata).classList.add('active');
+            window.scrollTo(0,0);
+        }
+
+        // ------------------ LOGICA TABLEAU ------------------
+        function gestisciVeloTutti() {
+            if (document.getElementById('tab_velo_tutti').checked) {
+                document.querySelectorAll('.tab_velo_opt').forEach(cb => cb.checked = false);
+            }
+        }
+        function gestisciVeloSingoli() {
+            const scelti = document.querySelectorAll('.tab_velo_opt:checked').length;
+            if (scelti > 0) document.getElementById('tab_velo_tutti').checked = false;
+            else document.getElementById('tab_velo_tutti').checked = true;
+        }
+        function ottieniStringaVelo() {
+            if (document.getElementById('tab_velo_tutti').checked) return "tutti";
+            let arrayScelti = [];
+            document.querySelectorAll('.tab_velo_opt:checked').forEach(cb => arrayScelti.push(cb.value));
+            return arrayScelti.join(",");
+        }
+        function gestisciMostraGifting() {
+            const selezione = document.getElementById('tab_tipo_gifting').value;
+            const sezioneNum = document.getElementById('tab_sezione_num_gifting');
+            if (selezione === "purple_grape") sezioneNum.style.display = "block";
+            else {
+                sezioneNum.style.display = "none";
+                document.getElementById('tab_cicli_gifting').value = "0";
+            }
+        }
+
+        function avviaTableau() {
+            // RETE DI SICUREZZA ANTI-SPRECO
+            const operatore = document.getElementById('tab_operatore').value.trim();
+            const locale = document.getElementById('tab_locale').value.trim();
+            const nGlo = parseInt(document.getElementById('tab_cicli').value) || 0;
+            const nVelo = parseInt(document.getElementById('tab_cicli_velo').value) || 0;
+            const nVuse = parseInt(document.getElementById('tab_cicli_vuse').value) || 0;
+            const nGift = parseInt(document.getElementById('tab_cicli_gifting').value) || 0;
+
+            if(!operatore) { vibraErrore(); alert("⚠️ Errore: Inserisci il nome dell'Operatore!"); return; }
+            if(!locale) { vibraErrore(); alert("⚠️ Errore: Inserisci il nome del Locale!"); return; }
+            
+            if(nGlo === 0 && nVelo === 0 && nVuse === 0 && nGift === 0) {
+                vibraErrore();
+                alert("🛑 BLOCCO ANTI-SPRECO: Tutti i contatori sono a 0.\nHai dimenticato di inserire i cicli. Invio annullato per non sprecare minuti server.");
+                return;
+            }
+
+            const dati = {
+                operatore: operatore,
+                locale: locale,
+                menu: document.getElementById('tab_menu').value,
+                cicli: nGlo.toString(),
+                cicli_velo: nVelo.toString(),
+                prodotti_velo: ottieniStringaVelo(),
+                cicli_vuse: nVuse.toString(),
+                cicli_gifting: nGift.toString()
+            };
+
+            const orario = document.getElementById('tab_ora_avvio').value;
+            gestisciTimer([dati], orario, 'bot.yml', 'Tableau');
+        }
+
+        // ------------------ LOGICA RAV ------------------
+        function generaModuliRav() {
+            const num = parseInt(document.getElementById('rav_num_promoters').value) || 1;
+            const container = document.getElementById('rav_moduli_container');
+            container.innerHTML = ''; 
+
+            for(let i=1; i<=num; i++) {
+                const div = document.createElement('div');
+                div.className = 'section dynamic-section';
+                div.innerHTML = `
+                    <h4 style="margin-top:0; margin-bottom: 10px; color:#10b981; font-size: 18px; font-weight: 700; letter-spacing: 0.5px;">🧑‍💼 Promoter ${i}</h4>
+                    <label>Nome Promoter</label>
+                    <input type="text" id="rav_promoter_${i}" list="lista-promoter" placeholder="Inizia a digitare o tocca...">
+                    <label>Cicli GLO</label>
+                    <input type="number" id="rav_n_glo_${i}" value="0">
+                    <label>Cicli VELO</label>
+                    <input type="number" id="rav_n_velo_${i}" value="0">
+                    <label>Cicli VUSE</label>
+                    <input type="number" id="rav_n_vuse_${i}" value="0">
+                `;
+                container.appendChild(div);
+            }
+        }
+        generaModuliRav();
+
+        function avviaRav() {
+            // RETE DI SICUREZZA ANTI-SPRECO
+            const operatore = document.getElementById('rav_operatore').value.trim();
+            if(!operatore) { vibraErrore(); alert("⚠️ Errore: Inserisci il tuo nome (Operatore)!"); return; }
+
+            const num = parseInt(document.getElementById('rav_num_promoters').value) || 1;
+            const orario = document.getElementById('rav_ora_avvio').value;
+            let payloadsMultipli = [];
+
+            for(let i=1; i<=num; i++) {
+                const promoter = document.getElementById(`rav_promoter_${i}`).value.trim();
+                const nGlo = parseInt(document.getElementById(`rav_n_glo_${i}`).value) || 0;
+                const nVelo = parseInt(document.getElementById(`rav_n_velo_${i}`).value) || 0;
+                const nVuse = parseInt(document.getElementById(`rav_n_vuse_${i}`).value) || 0;
+
+                if(!promoter) { 
+                    vibraErrore(); 
+                    alert(`⚠️ Errore: Inserisci il nome per il Promoter ${i}!`); 
+                    return; 
+                }
+
+                if(nGlo === 0 && nVelo === 0 && nVuse === 0) {
+                    vibraErrore();
+                    alert(`🛑 BLOCCO ANTI-SPRECO (Promoter ${i}):\nTutti i contatori sono a 0. Invio annullato per non sprecare minuti server.`);
+                    return;
+                }
+
+                payloadsMultipli.push({
+                    operatore: operatore, 
+                    promoter: promoter,
+                    n_glo: nGlo.toString(),
+                    n_velo: nVelo.toString(),
+                    n_vuse: nVuse.toString()
+                });
+            }
+            gestisciTimer(payloadsMultipli, orario, 'bot-rav.yml', 'RAV');
+        }
+
+        // ------------------ MOTORE DI INVIO ------------------
+        function gestisciTimer(payloads, orario, workflowFile, nomeBot) {
+            if(!GITHUB_TOKEN || !GITHUB_USER) {
+                alert("Manca il Token o l'utente. Attendi la sincronizzazione o cambia il token.");
+                return;
+            }
+
+            if ("vibrate" in navigator) navigator.vibrate(50); // Feedback click
+
+            if(orario) {
+                const oraAttuale = new Date();
+                const [ore, minuti] = orario.split(':');
+                const oraAvvio = new Date();
+                oraAvvio.setHours(parseInt(ore, 10), parseInt(minuti, 10), 0, 0);
+
+                if (oraAvvio.getTime() <= oraAttuale.getTime()) oraAvvio.setDate(oraAvvio.getDate() + 1);
+                
+                const attesa = oraAvvio.getTime() - oraAttuale.getTime();
+                alert(`✅ Programmati!\nLascia l'app in background fino alle ${orario}`);
+                setTimeout(() => { inviaRichiestaMultipla(payloads, workflowFile, nomeBot); }, attesa);
+            } else {
+                inviaRichiestaMultipla(payloads, workflowFile, nomeBot);
+            }
+        }
+
+        async function inviaRichiestaMultipla(payloads, workflowFile, nomeBot) {
+            let successCount = 0;
+            
+            for(let dati of payloads) {
+                const url = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/actions/workflows/${workflowFile}/dispatches`;
+                try {
+                    const res = await fetch(url, {
+                        method: 'POST',
+                        headers: {
+                            'Accept': 'application/vnd.github.v3+json',
+                            'Authorization': `Bearer ${GITHUB_TOKEN}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ ref: 'main', inputs: dati })
+                    });
+                    if(res.ok) successCount++;
+                } catch(e) { console.error("Errore di rete"); }
+                await new Promise(r => setTimeout(r, 500));
+            }
+
+            if(successCount > 0) {
+                if ("vibrate" in navigator) navigator.vibrate([100, 50, 100]); // Successo!
+                alert(`✅ Inviati ${successCount} moduli con successo al server privato!`);
+            } else {
+                vibraErrore();
+                alert(`Errore di invio a ${workflowFile}. Verifica che il file esista nella Repo.`);
+            }
+        }
+
+        // ------------------ STOP EMERGENZA ------------------
+        async function fermaBot(workflowFile, nomeBot) {
+            if(!GITHUB_TOKEN || !GITHUB_USER) return alert("Manca Token/Utente.");
+
+            vibraErrore();
+            const conferma = confirm(`⚠️ Sicuro di voler ARRESTARE i server di ${nomeBot}?`);
+            if(!conferma) return;
+
+            const urlRuns = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/actions/workflows/${workflowFile}/runs?per_page=10`;
+            try {
+                const res = await fetch(urlRuns, { headers: { 'Authorization': `Bearer ${GITHUB_TOKEN}` }});
+                if(res.ok) {
+                    const data = await res.json();
+                    const activeRuns = data.workflow_runs.filter(r => r.status === 'in_progress' || r.status === 'queued');
+
+                    if(activeRuns.length === 0) return alert(`Nessun processo attivo per ${nomeBot}.`);
+
+                    let stoppedCount = 0;
+                    for(let run of activeRuns) {
+                        const cancelUrl = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/actions/runs/${run.id}/cancel`;
+                        const cancelRes = await fetch(cancelUrl, { method: 'POST', headers: { 'Authorization': `Bearer ${GITHUB_TOKEN}` }});
+                        if(cancelRes.ok) stoppedCount++;
+                    }
+                    if(stoppedCount > 0) alert(`🛑 ${stoppedCount} server fermati.`);
+                    else alert(`Errore nell'arrestare i processi.`);
+                } else alert(`Errore API.`);
+            } catch(e) { alert(`Errore di connessione a GitHub.`); }
+        }
+    </script>
+</body>
+</html>
