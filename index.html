@@ -225,6 +225,22 @@
             font-size: 15px;
         }
 
+        /* --- STILE PER IL MENU A TENDINA PERSONALIZZATO (NO BLOCCO TASTIERA) --- */
+        .autocomplete-container { position: relative; width: 100%; }
+        .autocomplete-list {
+            position: absolute; top: 100%; left: 0; right: 0;
+            background: #0f172a; border: 1px solid #38bdf8;
+            border-radius: 8px; margin-top: 4px; z-index: 1000;
+            max-height: 180px; overflow-y: auto; display: none;
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.5);
+        }
+        .autocomplete-item {
+            padding: 12px 15px; color: #f1f5f9; font-size: 14px;
+            border-bottom: 1px solid #1e293b; cursor: pointer;
+        }
+        .autocomplete-item:last-child { border-bottom: none; }
+        .autocomplete-item:active { background: #1e293b; color: #38bdf8; }
+
         /* MODALE DI CARICAMENTO DINAMICO */
         #loading-overlay {
             position: fixed;
@@ -327,18 +343,22 @@
         </div>
     </div>
 
-    <!-- SCHERMATA TABLEAU (ORA CON LISTA PROMOTER FUZZY) -->
+    <!-- SCHERMATA TABLEAU -->
     <div id="screen-tableau" class="screen">
         <button class="btn-back" onclick="mostraSchermata('screen-home')">⬅ Torna alla Home</button>
         <h2>Configura Tableau</h2>
         
         <div class="section">
             <label>Operatore</label>
-            <!-- Aggiunto list="lista-promoter" e onPromoterInput per la ricerca anti-errore -->
-            <input type="text" id="tab_operatore" list="lista-promoter" placeholder="Tuo Nome (Inizia a digitare...)" oninput="onPromoterInput(event)">
+            <!-- CAMPO OPERATORE: Tornato a box di testo libero -->
+            <input type="text" id="tab_operatore" placeholder="Tuo Nome" oninput="salvaOperatore(this.value)">
 
             <label>Locale</label>
-            <input type="text" id="tab_locale" placeholder="Es. AI BOTTAI">
+            <!-- CAMPO LOCALE: Aggiunta la tendina personalizzata Fuzzy -->
+            <div class="autocomplete-container">
+                <input type="text" id="tab_locale" class="autocomplete-input" autocomplete="off" placeholder="Inizia a digitare..." oninput="filtraSuggerimenti(this, 'locale')" onfocus="filtraSuggerimenti(this, 'locale')">
+                <div class="autocomplete-list"></div>
+            </div>
 
             <label>Menu Proposte (1-10)</label>
             <select id="tab_menu">
@@ -407,7 +427,8 @@
         
         <div class="section">
             <label>Operatore</label>
-            <input type="text" id="rav_operatore" list="lista-promoter" placeholder="Tuo Nome" oninput="onPromoterInput(event)">
+            <!-- CAMPO OPERATORE RAV: Tornato a box di testo libero -->
+            <input type="text" id="rav_operatore" placeholder="Tuo Nome" oninput="salvaOperatore(this.value)">
 
             <label>Numero Promoter in turno</label>
             <input type="number" id="rav_num_promoters" value="1" min="1">
@@ -424,167 +445,179 @@
         <button class="btn-rav" onclick="avviaRav()">🚀 Avvia RAV (Multiplo)</button>
         <button class="btn-stop" onclick="fermaBot('bot-rav.yml', 'RAV')">🛑 STOP EMERGENZA GENERALE</button>
 
-        <datalist id="lista-promoter">
-            <option value="Maurizio Lombardo"></option>
-            <option value="Marco Billitteri"></option>
-            <option value="Ermelinda Rizzo"></option>
-            <option value="Maurizio Adriano Pecorella"></option>
-            <option value="Gianluca Mancuso"></option>
-            <option value="Alessandro Vullo"></option>
-            <option value="Salvatore Vullo"></option>
-            <option value="Roberto Salerno"></option>
-            <option value="Marika Di Pace"></option>
-            <option value="Gaia Dominici"></option>
-            <option value="Gianluca Auletta"></option>
-            <option value="Veronica Lazzarini"></option>
-            <option value="Francesca Galati"></option>
-            <option value="Marzia Giosuè"></option>
-            <option value="Sara Riccobono"></option>
-            <option value="Monique Koffi"></option>
-            <option value="Paola Scrima"></option>
-            <option value="Alessia Grazioli"></option>
-            <option value="Giulia Aiello"></option>
-            <option value="Marco Di Pace"></option>
-            <option value="Martina Izzo"></option>
-            <option value="Maidel Martinuzzi"></option>
-            <option value="Anna Piacentini"></option>
-            <option value="Julia Samar"></option>
-            <option value="Femke Da Pian"></option>
-            <option value="Alessandra Bernardin"></option>
-            <option value="Agata Bessarione"></option>
-            <option value="Tessi Kasi"></option>
-            <option value="Lucrezia Fabris"></option>
-            <option value="Elisa Stilli"></option>
-            <option value="Jacopo Medeot"></option>
-            <option value="Maria Francesca Riccio"></option>
-            <option value="Diletta Dolce"></option>
-            <option value="Carolina Picconi"></option>
-            <option value="Vittoria Bravin"></option>
-            <option value="Gaia Bibalo"></option>
-            <option value="Leonardo Catani"></option>
-            <option value="Daniela Feloreto"></option>
-            <option value="Michela Gerolini"></option>
-            <option value="Anna Alfieri"></option>
-            <option value="Mariella Petracca"></option>
-            <option value="Sara Ragogna"></option>
-            <option value="Sofia Palmucci"></option>
-            <option value="Alice Rapuano"></option>
-            <option value="Alessia Viscovo"></option>
-            <option value="Chiara Di Giovanni"></option>
-            <option value="Luigi Cimmino"></option>
-            <option value="Chiara Di Sipio"></option>
-            <option value="Claudia Calandro"></option>
-            <option value="Giorgia Capaldi"></option>
-            <option value="Alessandro Toso"></option>
-            <option value="Chiara Dello Iacovo"></option>
-            <option value="Simona Sellitto"></option>
-            <option value="Emma Vallicelli"></option>
-            <option value="Giorgia Rigoni"></option>
-            <option value="Lara Memmola"></option>
-            <option value="Giada Mirri"></option>
-            <option value="Gaia Perricone"></option>
-            <option value="Giada Ferrazzi"></option>
-            <option value="Chiara Amadei"></option>
-            <option value="Elena Montemaggi"></option>
-            <option value="Edoardo Talenti"></option>
-            <option value="Elisabetta Tavano"></option>
-            <option value="Giulia Assunta Paganelli"></option>
-            <option value="Ginevra Lenzi"></option>
-            <option value="Luisa Amelia Piccolo"></option>
-            <option value="Simona Toppi"></option>
-            <option value="Margherita Mombelli"></option>
-            <option value="Giulia Martelli"></option>
-            <option value="Alice La Cascia"></option>
-            <option value="Edison Caka"></option>
-            <option value="Lorenzo Di Scipio"></option>
-            <option value="Giovanni Valzani"></option>
-            <option value="Camilla D'Alimonte"></option>
-            <option value="Nidal Fatnassi"></option>
-            <option value="Giada Cosco"></option>
-            <option value="Eugenia Barbone"></option>
-            <option value="Giulia Cerchiara"></option>
-            <option value="Mirko Langone"></option>
-            <option value="Laura Naibo"></option>
-            <option value="Arianna Boscolo"></option>
-            <option value="Simone Tilocca"></option>
-            <option value="Ilaria Di Pretoro"></option>
-            <option value="Agenzia1"></option>
-            <option value="Agenzia2"></option>
-            <option value="Agenzia3"></option>
-            <option value="Denise Enei Simion"></option>
-            <option value="Flor Ruggeri"></option>
-            <option value="Alice Tuscano"></option>
-            <option value="Vittoria Gammone"></option>
-            <option value="Greta Collina"></option>
-            <option value="Jacqueline Vagnini"></option>
-            <option value="Beatrice Gioannini"></option>
-            <option value="Martina Raga"></option>
-            <option value="Vittoria Santoni"></option>
-            <option value="Gessica Fede"></option>
-            <option value="Moreno Tognetto"></option>
-            <option value="Anna Casadio"></option>
-            <option value="Doha Mesrour"></option>
-            <option value="Cristiana Canova"></option>
-            <option value="Anna Morgani"></option>
-            <option value="Martina Breviglieri"></option>
-            <option value="Elisa Mataloni"></option>
-            <option value="Alessia Mini"></option>
-            <option value="Katia Rossi"></option>
-            <option value="Emma Bucci"></option>
-            <option value="Stella Bagli"></option>
-            <option value="Alessia Allegrucci"></option>
-            <option value="Martina Battarra"></option>
-            <option value="Elda Piccinini"></option>
-            <option value="Sofia Pedretti"></option>
-            <option value="Claudia Boninsegni"></option>
-            <option value="Giorgia Bucci"></option>
-            <option value="Erica Barducci"></option>
-            <option value="Monika Gjolaj"></option>
-            <option value="Margherita Pezzolesi"></option>
-            <option value="Manila Scerra"></option>
-            <option value="Gaja Memmola"></option>
-            <option value="Giorgia Corato"></option>
-            <option value="Daniele Del Prete"></option>
-            <option value="Lorenzo Donatiello"></option>
-            <option value="Giulia Berzacola"></option>
-            <option value="Lisa Frison"></option>
-            <option value="Andreas Busetto"></option>
-            <option value="Lucrezia Bissoli"></option>
-            <option value="Anna Peroni"></option>
-            <option value="Marco Bizzotto"></option>
-            <option value="Federica Bolognini"></option>
-            <option value="Niccolò Marchesan"></option>
-            <option value="Eugenio Terzi"></option>
-            <option value="Davide Macaluso"></option>
-            <option value="Giulia Signorini"></option>
-            <option value="Angelica Righetti"></option>
-            <option value="Alessandro Patrini"></option>
-            <option value="Manar Ennaimi"></option>
-            <option value="Giulia Buzzi"></option>
-            <option value="Matteo Possidoni"></option>
-            <option value="Michela Rizzi"></option>
-            <option value="Anna Costalonga"></option>
-            <option value="Benedetta Ghidini"></option>
-            <option value="Yuri Bazzani"></option>
-            <option value="Beatrice Risottino"></option>
-            <option value="Alice Zanna"></option>
-            <option value="Margherita Piazza"></option>
-            <option value="Mailen Delaini"></option>
-            <option value="Yasmine Razuoali"></option>
-            <option value="Angelica Chini"></option>
-            <option value="Virginia Milani"></option>
-            <option value="Elia Borolameotti"></option>
-            <option value="Camilla Mele Cortese"></option>
-            <option value="Sara Sevignani"></option>
-            <option value="Arianna Bertuol"></option>
-            <option value="Piercarlo Vardanega"></option>
-            <option value="Elena Nardin"></option>
-            <option value="Marco Dalla Benedetta"></option>
-            <option value="Irene Cirivello"></option>
-            <option value="Alice Giovane"></option>
-            <option value="Alice"></option>
-            <option value="Amelia"></option>
-        </datalist>
+        <!-- Liste Nascoste (Usate solo come database per Javascript, invisibili all'utente) -->
+        <div style="display:none;">
+            <!-- INSERISCI QUI I LOCALI COME FAI PER I PROMOTER -->
+            <datalist id="lista-locali">
+                <option value="AI BOTTAI"></option>
+                <option value="CAFFE ROMA"></option>
+                <option value="BAR CENTRALE"></option>
+                <option value="DISCOTECA METROPOLIS"></option>
+                <option value="PUB IL GATTO NERO"></option>
+            </datalist>
+
+            <datalist id="lista-promoter">
+                <option value="Maurizio Lombardo"></option>
+                <option value="Marco Billitteri"></option>
+                <option value="Ermelinda Rizzo"></option>
+                <option value="Maurizio Adriano Pecorella"></option>
+                <option value="Gianluca Mancuso"></option>
+                <option value="Alessandro Vullo"></option>
+                <option value="Salvatore Vullo"></option>
+                <option value="Roberto Salerno"></option>
+                <option value="Marika Di Pace"></option>
+                <option value="Gaia Dominici"></option>
+                <option value="Gianluca Auletta"></option>
+                <option value="Veronica Lazzarini"></option>
+                <option value="Francesca Galati"></option>
+                <option value="Marzia Giosuè"></option>
+                <option value="Sara Riccobono"></option>
+                <option value="Monique Koffi"></option>
+                <option value="Paola Scrima"></option>
+                <option value="Alessia Grazioli"></option>
+                <option value="Giulia Aiello"></option>
+                <option value="Marco Di Pace"></option>
+                <option value="Martina Izzo"></option>
+                <option value="Maidel Martinuzzi"></option>
+                <option value="Anna Piacentini"></option>
+                <option value="Julia Samar"></option>
+                <option value="Femke Da Pian"></option>
+                <option value="Alessandra Bernardin"></option>
+                <option value="Agata Bessarione"></option>
+                <option value="Tessi Kasi"></option>
+                <option value="Lucrezia Fabris"></option>
+                <option value="Elisa Stilli"></option>
+                <option value="Jacopo Medeot"></option>
+                <option value="Maria Francesca Riccio"></option>
+                <option value="Diletta Dolce"></option>
+                <option value="Carolina Picconi"></option>
+                <option value="Vittoria Bravin"></option>
+                <option value="Gaia Bibalo"></option>
+                <option value="Leonardo Catani"></option>
+                <option value="Daniela Feloreto"></option>
+                <option value="Michela Gerolini"></option>
+                <option value="Anna Alfieri"></option>
+                <option value="Mariella Petracca"></option>
+                <option value="Sara Ragogna"></option>
+                <option value="Sofia Palmucci"></option>
+                <option value="Alice Rapuano"></option>
+                <option value="Alessia Viscovo"></option>
+                <option value="Chiara Di Giovanni"></option>
+                <option value="Luigi Cimmino"></option>
+                <option value="Chiara Di Sipio"></option>
+                <option value="Claudia Calandro"></option>
+                <option value="Giorgia Capaldi"></option>
+                <option value="Alessandro Toso"></option>
+                <option value="Chiara Dello Iacovo"></option>
+                <option value="Simona Sellitto"></option>
+                <option value="Emma Vallicelli"></option>
+                <option value="Giorgia Rigoni"></option>
+                <option value="Lara Memmola"></option>
+                <option value="Giada Mirri"></option>
+                <option value="Gaia Perricone"></option>
+                <option value="Giada Ferrazzi"></option>
+                <option value="Chiara Amadei"></option>
+                <option value="Elena Montemaggi"></option>
+                <option value="Edoardo Talenti"></option>
+                <option value="Elisabetta Tavano"></option>
+                <option value="Giulia Assunta Paganelli"></option>
+                <option value="Ginevra Lenzi"></option>
+                <option value="Luisa Amelia Piccolo"></option>
+                <option value="Simona Toppi"></option>
+                <option value="Margherita Mombelli"></option>
+                <option value="Giulia Martelli"></option>
+                <option value="Alice La Cascia"></option>
+                <option value="Edison Caka"></option>
+                <option value="Lorenzo Di Scipio"></option>
+                <option value="Giovanni Valzani"></option>
+                <option value="Camilla D'Alimonte"></option>
+                <option value="Nidal Fatnassi"></option>
+                <option value="Giada Cosco"></option>
+                <option value="Eugenia Barbone"></option>
+                <option value="Giulia Cerchiara"></option>
+                <option value="Mirko Langone"></option>
+                <option value="Laura Naibo"></option>
+                <option value="Arianna Boscolo"></option>
+                <option value="Simone Tilocca"></option>
+                <option value="Ilaria Di Pretoro"></option>
+                <option value="Agenzia1"></option>
+                <option value="Agenzia2"></option>
+                <option value="Agenzia3"></option>
+                <option value="Denise Enei Simion"></option>
+                <option value="Flor Ruggeri"></option>
+                <option value="Alice Tuscano"></option>
+                <option value="Vittoria Gammone"></option>
+                <option value="Greta Collina"></option>
+                <option value="Jacqueline Vagnini"></option>
+                <option value="Beatrice Gioannini"></option>
+                <option value="Martina Raga"></option>
+                <option value="Vittoria Santoni"></option>
+                <option value="Gessica Fede"></option>
+                <option value="Moreno Tognetto"></option>
+                <option value="Anna Casadio"></option>
+                <option value="Doha Mesrour"></option>
+                <option value="Cristiana Canova"></option>
+                <option value="Anna Morgani"></option>
+                <option value="Martina Breviglieri"></option>
+                <option value="Elisa Mataloni"></option>
+                <option value="Alessia Mini"></option>
+                <option value="Katia Rossi"></option>
+                <option value="Emma Bucci"></option>
+                <option value="Stella Bagli"></option>
+                <option value="Alessia Allegrucci"></option>
+                <option value="Martina Battarra"></option>
+                <option value="Elda Piccinini"></option>
+                <option value="Sofia Pedretti"></option>
+                <option value="Claudia Boninsegni"></option>
+                <option value="Giorgia Bucci"></option>
+                <option value="Erica Barducci"></option>
+                <option value="Monika Gjolaj"></option>
+                <option value="Margherita Pezzolesi"></option>
+                <option value="Manila Scerra"></option>
+                <option value="Gaja Memmola"></option>
+                <option value="Giorgia Corato"></option>
+                <option value="Daniele Del Prete"></option>
+                <option value="Lorenzo Donatiello"></option>
+                <option value="Giulia Berzacola"></option>
+                <option value="Lisa Frison"></option>
+                <option value="Andreas Busetto"></option>
+                <option value="Lucrezia Bissoli"></option>
+                <option value="Anna Peroni"></option>
+                <option value="Marco Bizzotto"></option>
+                <option value="Federica Bolognini"></option>
+                <option value="Niccolò Marchesan"></option>
+                <option value="Eugenio Terzi"></option>
+                <option value="Davide Macaluso"></option>
+                <option value="Giulia Signorini"></option>
+                <option value="Angelica Righetti"></option>
+                <option value="Alessandro Patrini"></option>
+                <option value="Manar Ennaimi"></option>
+                <option value="Giulia Buzzi"></option>
+                <option value="Matteo Possidoni"></option>
+                <option value="Michela Rizzi"></option>
+                <option value="Anna Costalonga"></option>
+                <option value="Benedetta Ghidini"></option>
+                <option value="Yuri Bazzani"></option>
+                <option value="Beatrice Risottino"></option>
+                <option value="Alice Zanna"></option>
+                <option value="Margherita Piazza"></option>
+                <option value="Mailen Delaini"></option>
+                <option value="Yasmine Razuoali"></option>
+                <option value="Angelica Chini"></option>
+                <option value="Virginia Milani"></option>
+                <option value="Elia Borolameotti"></option>
+                <option value="Camilla Mele Cortese"></option>
+                <option value="Sara Sevignani"></option>
+                <option value="Arianna Bertuol"></option>
+                <option value="Piercarlo Vardanega"></option>
+                <option value="Elena Nardin"></option>
+                <option value="Marco Dalla Benedetta"></option>
+                <option value="Irene Cirivello"></option>
+                <option value="Alice Giovane"></option>
+                <option value="Alice"></option>
+                <option value="Amelia"></option>
+            </datalist>
+        </div>
     </div>
 
     <!-- SCRIPT CORAZZATO -->
@@ -595,6 +628,7 @@
         
         // ARRAY MASTER PER LA RICERCA FUZZY
         var masterPromoterList = [];
+        var masterLocaleList = [];
 
         try {
             GITHUB_TOKEN = localStorage.getItem('gh_token') || "";
@@ -604,13 +638,17 @@
         }
 
         window.onload = async function() {
-            // ESTRAZIONE NOMI PER LA RICERCA ANTI-ERRORE
-            var dlNode = document.getElementById('lista-promoter');
-            if(dlNode) {
-                var options = dlNode.getElementsByTagName('option');
-                for(var i=0; i<options.length; i++) {
-                    masterPromoterList.push(options[i].value);
-                }
+            // ESTRAZIONE NOMI PER LA RICERCA CUSTOM
+            var dlPromoter = document.getElementById('lista-promoter');
+            if(dlPromoter) {
+                var optsP = dlPromoter.getElementsByTagName('option');
+                for(var i=0; i<optsP.length; i++) masterPromoterList.push(optsP[i].value);
+            }
+
+            var dlLocali = document.getElementById('lista-locali');
+            if(dlLocali) {
+                var optsL = dlLocali.getElementsByTagName('option');
+                for(var j=0; j<optsL.length; j++) masterLocaleList.push(optsL[j].value);
             }
 
             try {
@@ -632,24 +670,20 @@
                         alert("Senza token l'app non funzionerà.");
                     }
                 }
-                
-                if(GITHUB_TOKEN) {
-                    await verificaConnessione();
-                }
+                if(GITHUB_TOKEN) await verificaConnessione();
 
                 var savedOp = localStorage.getItem('saved_operatore') || "";
                 if(savedOp) {
                     document.getElementById('tab_operatore').value = savedOp;
                     document.getElementById('rav_operatore').value = savedOp;
                 }
-                
                 generaModuliRav();
             } catch(e) {
                 alert("Errore di caricamento: " + e.message);
             }
         };
 
-        // ALGORITMO DI LEVENSHTEIN (Distanza errori di battitura)
+        // --- SISTEMA DI MENU A TENDINA CUSTOM E RICERCA FUZZY (ANTI-BLOCCO TASTIERA) ---
         function calcolaDistanza(a, b) {
             if(a.length === 0) return b.length;
             if(b.length === 0) return a.length;
@@ -668,65 +702,70 @@
             return matrix[b.length][a.length];
         }
 
-        // FUNZIONE DI RICERCA FUZZY
-        function onPromoterInput(event) {
-            var val = event.target.value.toLowerCase().trim();
-            
-            // Salvataggio standard operatore
-            if(event.target.id === 'tab_operatore' || event.target.id === 'rav_operatore') {
-                salvaOperatore(event.target.value);
-            }
+        function filtraSuggerimenti(inputEl, tipo) {
+            var val = inputEl.value.toLowerCase().trim();
+            var dataList = (tipo === 'promoter') ? masterPromoterList : masterLocaleList;
+            var listContainer = inputEl.nextElementSibling; 
 
-            // Se cancella o scrive solo 1 lettera, rimettiamo tutta la lista originale
-            if(val.length < 2) {
-                ripristinaDatalist(masterPromoterList);
-                return;
-            }
+            if (!listContainer || !listContainer.classList.contains('autocomplete-list')) return;
 
+            listContainer.innerHTML = '';
             var filtrati = [];
-            for(var i=0; i<masterPromoterList.length; i++) {
-                var nome = masterPromoterList[i].toLowerCase();
-                
-                // Match esatto nativo
-                if(nome.includes(val)) {
-                    filtrati.push(masterPromoterList[i]);
-                    continue;
-                }
-                
-                // Match Fuzzy (Errori tollerati)
-                var paroleNome = nome.split(' ');
-                var paroleInput = val.split(' ');
-                var matchTrovato = false;
-                
-                for(var j=0; j<paroleInput.length; j++) {
-                    var pIn = paroleInput[j];
-                    if(pIn.length < 3) continue; // Non correggiamo parole troppo corte
-                    for(var k=0; k<paroleNome.length; k++) {
-                        var pNom = paroleNome[k];
-                        // Tolleriamo massimo 2 lettere sbagliate
-                        if(calcolaDistanza(pIn, pNom.substring(0, pIn.length)) <= 2) {
-                            matchTrovato = true;
-                            break;
-                        }
+
+            if (val.length === 0) {
+                filtrati = dataList.slice(0, 40); // Mostra i primi 40 se clicchi a vuoto
+            } else {
+                for(var i=0; i<dataList.length; i++) {
+                    var nome = dataList[i].toLowerCase();
+                    if(nome.includes(val)) {
+                        filtrati.push(dataList[i]);
+                        continue;
                     }
-                    if(matchTrovato) break;
+                    var paroleNome = nome.split(' ');
+                    var paroleInput = val.split(' ');
+                    var matchTrovato = false;
+                    for(var j=0; j<paroleInput.length; j++) {
+                        var pIn = paroleInput[j];
+                        if(pIn.length < 3) continue; 
+                        for(var k=0; k<paroleNome.length; k++) {
+                            var pNom = paroleNome[k];
+                            if(calcolaDistanza(pIn, pNom.substring(0, pIn.length)) <= 2) {
+                                matchTrovato = true; break;
+                            }
+                        }
+                        if(matchTrovato) break;
+                    }
+                    if(matchTrovato) filtrati.push(dataList[i]);
                 }
-                if(matchTrovato) filtrati.push(masterPromoterList[i]);
             }
-            
-            ripristinaDatalist(filtrati);
+
+            if(filtrati.length > 0) {
+                for(var x=0; x<filtrati.length; x++) {
+                    var div = document.createElement('div');
+                    div.className = 'autocomplete-item';
+                    div.innerText = filtrati[x];
+                    
+                    div.onmousedown = function(e) {
+                        e.preventDefault(); 
+                        inputEl.value = this.innerText;
+                        listContainer.style.display = 'none';
+                    };
+                    listContainer.appendChild(div);
+                }
+                listContainer.style.display = 'block';
+            } else {
+                listContainer.style.display = 'none';
+            }
         }
 
-        // RISCRIVE LE OPZIONI DELLA TENDINA IN TEMPO REALE
-        function ripristinaDatalist(arrayValori) {
-            var dl = document.getElementById('lista-promoter');
-            dl.innerHTML = '';
-            for(var i=0; i<arrayValori.length; i++) {
-                var opt = document.createElement('option');
-                opt.value = arrayValori[i];
-                dl.appendChild(opt);
+        // Nascondi le tendine se clicchi fuori
+        document.addEventListener('click', function(e) {
+            if(!e.target.classList.contains('autocomplete-input')) {
+                var lists = document.querySelectorAll('.autocomplete-list');
+                for(var i=0; i<lists.length; i++) lists[i].style.display = 'none';
             }
-        }
+        });
+        // --------------------------------------------------------------------------------
 
         function vibraErrore() {
             try { if ("vibrate" in navigator) navigator.vibrate([200, 100, 200]); } catch(e) {}
@@ -996,10 +1035,13 @@
                 var div = document.createElement('div');
                 div.className = 'section dynamic-section';
                 
-                // Anche qui i campi generati includono onPromoterInput
+                // CAMPO PROMOTER: Inserita tendina custom (niente blocco tastiera)
                 div.innerHTML = '<h4 style="margin-top:0; margin-bottom: 10px; color:#10b981; font-size: 18px; font-weight: 700;">🧑‍💼 Promoter ' + i + '</h4>' +
                     '<label>Nome Promoter</label>' +
-                    '<input type="text" id="rav_promoter_' + i + '" list="lista-promoter" oninput="onPromoterInput(event)" placeholder="Inizia a digitare o tocca...">' +
+                    '<div class="autocomplete-container">' +
+                        '<input type="text" id="rav_promoter_' + i + '" class="autocomplete-input" autocomplete="off" placeholder="Inizia a digitare..." oninput="filtraSuggerimenti(this, \'promoter\')" onfocus="filtraSuggerimenti(this, \'promoter\')">' +
+                        '<div class="autocomplete-list"></div>' +
+                    '</div>' +
                     '<label>Cicli GLO</label>' +
                     '<input type="number" id="rav_n_glo_' + i + '" value="0">' +
                     '<label>Cicli VELO</label>' +
