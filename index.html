@@ -1,40 +1,203 @@
-// --- NUOVA FUNZIONE CONTATORE MINUTI CON DEBUG ---
-        async function aggiornaMinuti() {
-            if(!GITHUB_TOKEN) return;
-            const url = `https://api.github.com/users/${GITHUB_USER}/settings/billing/actions`;
-            const divMinuti = document.getElementById('minuti-residui');
-            
-            try {
-                divMinuti.innerText = "...";
-                divMinuti.style.color = "#38bdf8";
-                
-                const res = await fetch(url, {
-                    headers: {
-                        'Accept': 'application/vnd.github.v3+json',
-                        'Authorization': `Bearer ${GITHUB_TOKEN}`
-                    }
-                });
-                
-                if(res.ok) {
-                    const data = await res.json();
-                    const minutiUsati = data.total_minutes_used;
-                    const minutiRestanti = 2000 - minutiUsati;
-                    
-                    divMinuti.innerText = minutiRestanti;
-                    
-                    if(minutiRestanti < 500) divMinuti.style.color = "#fbbf24"; 
-                    if(minutiRestanti < 100) divMinuti.style.color = "#ef4444"; 
-                    
-                } else {
-                    // SE FALLISCE, MOSTRA L'ERRORE ESATTO DI GITHUB
-                    const erroreEsatto = await res.text();
-                    alert("Errore GitHub: " + res.status + "\nDettagli: " + erroreEsatto);
-                    
-                    divMinuti.innerText = "Errore API";
-                    divMinuti.style.fontSize = "18px";
-                }
-            } catch(e) {
-                divMinuti.innerText = "Errore Rete";
-                divMinuti.style.fontSize = "18px";
-            }
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hub Automazioni GLO</title>
+    
+    <!-- Importazione Font Moderno -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        /* --- TEMA SCURO E MODERNO --- */
+        body { 
+            font-family: 'Montserrat', sans-serif; 
+            padding: 20px; 
+            background: #0f172a; 
+            color: #f8fafc; 
+            margin: 0; 
+            line-height: 1.6;
         }
+
+        h2 { 
+            text-align: center; 
+            color: #ffffff; 
+            margin-top: 0; 
+            font-weight: 700; 
+            letter-spacing: 0.5px; 
+            margin-bottom: 25px;
+        }
+        
+        .section { 
+            background: #1e293b; 
+            padding: 25px 20px; 
+            border-radius: 16px; 
+            margin-bottom: 20px; 
+            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.5); 
+            border: 1px solid #334155; 
+        }
+        
+        label { 
+            font-weight: 600; 
+            font-size: 14px; 
+            color: #cbd5e1; 
+            display: block; 
+            margin-top: 15px; 
+            margin-bottom: 8px; 
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-size: 12px;
+        }
+        
+        input[type="text"], input[type="number"], input[type="time"], select { 
+            width: 100%; 
+            padding: 14px; 
+            border-radius: 10px; 
+            border: 1px solid #475569; 
+            background: #0f172a; 
+            color: #f1f5f9;
+            font-size: 16px; 
+            font-family: 'Montserrat', sans-serif;
+            box-sizing: border-box; 
+            transition: all 0.3s ease; 
+        }
+        
+        input:focus, select:focus {
+            border-color: #38bdf8;
+            box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2);
+            outline: none;
+        }
+
+        button { 
+            font-family: 'Montserrat', sans-serif;
+            color: white; 
+            border: none; 
+            font-weight: 700; 
+            font-size: 16px; 
+            padding: 16px; 
+            margin-top: 10px; 
+            width: 100%; 
+            border-radius: 12px; 
+            cursor: pointer; 
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); 
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        button:active { transform: scale(0.97); } 
+        
+        .btn-menu { 
+            height: 100px; 
+            font-size: 20px; 
+            margin-bottom: 20px; 
+            background: linear-gradient(135deg, #0284c7, #0369a1);
+            box-shadow: 0 8px 20px rgba(2, 132, 199, 0.3);
+        }
+        .btn-menu:hover { box-shadow: 0 12px 25px rgba(2, 132, 199, 0.4); transform: translateY(-2px); }
+        
+        .btn-rav { 
+            background: linear-gradient(135deg, #059669, #047857);
+            box-shadow: 0 8px 20px rgba(5, 150, 105, 0.3);
+        }
+        .btn-rav:hover { box-shadow: 0 12px 25px rgba(5, 150, 105, 0.4); transform: translateY(-2px); }
+
+        .btn-genera { background: #0891b2; margin-bottom: 15px; }
+        .btn-back { 
+            background: #475569; 
+            font-size: 14px; 
+            padding: 12px; 
+            margin-bottom: 20px; 
+            color: #f1f5f9; 
+            text-transform: none; 
+        }
+        .btn-stop { 
+            background: linear-gradient(135deg, #dc2626, #b91c1c); 
+            margin-top: 25px; 
+            box-shadow: 0 8px 20px rgba(220, 38, 38, 0.3); 
+        }
+        .btn-reset { 
+            background: transparent; 
+            border: 1px solid #f59e0b; 
+            color: #f59e0b; 
+            font-size: 14px; 
+            padding: 12px; 
+            margin-top: 30px; 
+            text-transform: none; 
+        }
+        
+        .minutes-box { text-align: center; border-left: 4px solid #38bdf8; }
+        .minutes-title { margin: 0; font-size: 14px; font-weight: 700; color: #cbd5e1; text-transform: uppercase; letter-spacing: 1px;}
+        .minutes-value { font-size: 32px; font-weight: 700; color: #38bdf8; }
+        
+        .gifting-box { 
+            background: #422006; 
+            padding: 15px; 
+            border-radius: 12px; 
+            border: 1px solid #78350f; 
+            margin-top: 15px; 
+        }
+        .gifting-box label { color: #fcd34d; margin-top: 0; }
+
+        .checkbox-group { 
+            background: #0f172a; 
+            border: 1px solid #334155; 
+            padding: 15px; 
+            border-radius: 12px; 
+            margin-top: 10px; 
+            margin-bottom: 15px; 
+        }
+        .checkbox-label { 
+            font-weight: 500; 
+            font-size: 15px; 
+            display: flex; 
+            align-items: center; 
+            margin-bottom: 12px; 
+            margin-top: 0; 
+            cursor: pointer; 
+            color: #cbd5e1;
+            transition: color 0.2s;
+        }
+        .checkbox-label:hover { color: #ffffff; }
+        .checkbox-label input { 
+            width: auto; 
+            margin-right: 12px; 
+            transform: scale(1.4); 
+            accent-color: #38bdf8; 
+        }
+        hr { border: 0; border-top: 1px solid #334155; margin: 15px 0; }
+
+        .dynamic-section { 
+            background: #1e293b; 
+            border-left: 4px solid #10b981; 
+            border-radius: 0 16px 16px 0;
+            padding: 20px;
+            margin-bottom: 20px; 
+            box-shadow: inset 0 0 15px rgba(0,0,0,0.2);
+        }
+
+        @keyframes fadeSlideIn {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .screen { display: none; }
+        .screen.active { 
+            display: block; 
+            animation: fadeSlideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards; 
+        }
+    </style>
+</head>
+<body>
+
+    <!-- SCHERMATA PRINCIPALE -->
+    <div id="screen-home" class="screen active">
+        <h2>HUB AUTOMAZIONI</h2>
+
+        <!-- RIQUADRO MINUTI -->
+        <div class="section minutes-box">
+            <p class="minutes-title">⏱️ Minuti GitHub Restanti</p>
+            <p style="margin: 10px 0; font-size: 18px;"><span id="minuti-residui" class="minutes-value">...</span> <span style="color: #64748b;">/ 2000</span></p>
+            <button class="btn-back" style="background: transparent; border: 1px solid #38bdf8; color: #38bdf8; font-weight: 600; padding: 10px; width: auto; margin: 5px auto 0 auto; display: block;" onclick="aggiornaMinuti()">🔄 Aggiorna</button>
+        </div>
+
+        <div
