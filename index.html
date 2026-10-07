@@ -327,14 +327,15 @@
         </div>
     </div>
 
-    <!-- SCHERMATA TABLEAU -->
+    <!-- SCHERMATA TABLEAU (ORA CON LISTA PROMOTER FUZZY) -->
     <div id="screen-tableau" class="screen">
         <button class="btn-back" onclick="mostraSchermata('screen-home')">⬅ Torna alla Home</button>
         <h2>Configura Tableau</h2>
         
         <div class="section">
             <label>Operatore</label>
-            <input type="text" id="tab_operatore" placeholder="Tuo Nome" oninput="salvaOperatore(this.value)">
+            <!-- Aggiunto list="lista-promoter" e onPromoterInput per la ricerca anti-errore -->
+            <input type="text" id="tab_operatore" list="lista-promoter" placeholder="Tuo Nome (Inizia a digitare...)" oninput="onPromoterInput(event)">
 
             <label>Locale</label>
             <input type="text" id="tab_locale" placeholder="Es. AI BOTTAI">
@@ -406,7 +407,7 @@
         
         <div class="section">
             <label>Operatore</label>
-            <input type="text" id="rav_operatore" placeholder="Tuo Nome" oninput="salvaOperatore(this.value)">
+            <input type="text" id="rav_operatore" list="lista-promoter" placeholder="Tuo Nome" oninput="onPromoterInput(event)">
 
             <label>Numero Promoter in turno</label>
             <input type="number" id="rav_num_promoters" value="1" min="1">
@@ -586,11 +587,14 @@
         </datalist>
     </div>
 
-    <!-- SCRIPT CORAZZATO CON LOADER DINAMICO REALE E TASTO NASCONDI -->
+    <!-- SCRIPT CORAZZATO -->
     <script>
         var GITHUB_TOKEN = "";
         var GITHUB_USER = "";
         var GITHUB_REPO = "BOT"; 
+        
+        // ARRAY MASTER PER LA RICERCA FUZZY
+        var masterPromoterList = [];
 
         try {
             GITHUB_TOKEN = localStorage.getItem('gh_token') || "";
@@ -600,6 +604,15 @@
         }
 
         window.onload = async function() {
+            // ESTRAZIONE NOMI PER LA RICERCA ANTI-ERRORE
+            var dlNode = document.getElementById('lista-promoter');
+            if(dlNode) {
+                var options = dlNode.getElementsByTagName('option');
+                for(var i=0; i<options.length; i++) {
+                    masterPromoterList.push(options[i].value);
+                }
+            }
+
             try {
                 var cronologia = JSON.parse(localStorage.getItem('hub_cronologia') || '[]');
                 var limite = new Date().getTime() - (30 * 24 * 60 * 60 * 1000);
@@ -635,6 +648,85 @@
                 alert("Errore di caricamento: " + e.message);
             }
         };
+
+        // ALGORITMO DI LEVENSHTEIN (Distanza errori di battitura)
+        function calcolaDistanza(a, b) {
+            if(a.length === 0) return b.length;
+            if(b.length === 0) return a.length;
+            var matrix = [];
+            for(var i = 0; i <= b.length; i++){ matrix[i] = [i]; }
+            for(var j = 0; j <= a.length; j++){ matrix[0][j] = j; }
+            for(var i = 1; i <= b.length; i++){
+                for(var j = 1; j <= a.length; j++){
+                    if(b.charAt(i-1) === a.charAt(j-1)){
+                        matrix[i][j] = matrix[i-1][j-1];
+                    } else {
+                        matrix[i][j] = Math.min(matrix[i-1][j-1] + 1, Math.min(matrix[i][j-1] + 1, matrix[i-1][j] + 1));
+                    }
+                }
+            }
+            return matrix[b.length][a.length];
+        }
+
+        // FUNZIONE DI RICERCA FUZZY
+        function onPromoterInput(event) {
+            var val = event.target.value.toLowerCase().trim();
+            
+            // Salvataggio standard operatore
+            if(event.target.id === 'tab_operatore' || event.target.id === 'rav_operatore') {
+                salvaOperatore(event.target.value);
+            }
+
+            // Se cancella o scrive solo 1 lettera, rimettiamo tutta la lista originale
+            if(val.length < 2) {
+                ripristinaDatalist(masterPromoterList);
+                return;
+            }
+
+            var filtrati = [];
+            for(var i=0; i<masterPromoterList.length; i++) {
+                var nome = masterPromoterList[i].toLowerCase();
+                
+                // Match esatto nativo
+                if(nome.includes(val)) {
+                    filtrati.push(masterPromoterList[i]);
+                    continue;
+                }
+                
+                // Match Fuzzy (Errori tollerati)
+                var paroleNome = nome.split(' ');
+                var paroleInput = val.split(' ');
+                var matchTrovato = false;
+                
+                for(var j=0; j<paroleInput.length; j++) {
+                    var pIn = paroleInput[j];
+                    if(pIn.length < 3) continue; // Non correggiamo parole troppo corte
+                    for(var k=0; k<paroleNome.length; k++) {
+                        var pNom = paroleNome[k];
+                        // Tolleriamo massimo 2 lettere sbagliate
+                        if(calcolaDistanza(pIn, pNom.substring(0, pIn.length)) <= 2) {
+                            matchTrovato = true;
+                            break;
+                        }
+                    }
+                    if(matchTrovato) break;
+                }
+                if(matchTrovato) filtrati.push(masterPromoterList[i]);
+            }
+            
+            ripristinaDatalist(filtrati);
+        }
+
+        // RISCRIVE LE OPZIONI DELLA TENDINA IN TEMPO REALE
+        function ripristinaDatalist(arrayValori) {
+            var dl = document.getElementById('lista-promoter');
+            dl.innerHTML = '';
+            for(var i=0; i<arrayValori.length; i++) {
+                var opt = document.createElement('option');
+                opt.value = arrayValori[i];
+                dl.appendChild(opt);
+            }
+        }
 
         function vibraErrore() {
             try { if ("vibrate" in navigator) navigator.vibrate([200, 100, 200]); } catch(e) {}
@@ -903,9 +995,11 @@
             for(var i=1; i<=num; i++) {
                 var div = document.createElement('div');
                 div.className = 'section dynamic-section';
+                
+                // Anche qui i campi generati includono onPromoterInput
                 div.innerHTML = '<h4 style="margin-top:0; margin-bottom: 10px; color:#10b981; font-size: 18px; font-weight: 700;">🧑‍💼 Promoter ' + i + '</h4>' +
                     '<label>Nome Promoter</label>' +
-                    '<input type="text" id="rav_promoter_' + i + '" list="lista-promoter" placeholder="Inizia a digitare o tocca...">' +
+                    '<input type="text" id="rav_promoter_' + i + '" list="lista-promoter" oninput="onPromoterInput(event)" placeholder="Inizia a digitare o tocca...">' +
                     '<label>Cicli GLO</label>' +
                     '<input type="number" id="rav_n_glo_' + i + '" value="0">' +
                     '<label>Cicli VELO</label>' +
@@ -977,7 +1071,6 @@
             }
         }
 
-        // --- MOTORE DI INVIO CON LOADER DINAMICO A 3 FASI REALI E TASTO NASCONDI ---
         async function inviaRichiestaMultipla(payloads, workflowFile, nomeBot) {
             var overlay = document.getElementById('loading-overlay');
             var loaderText = document.getElementById('loader-text');
