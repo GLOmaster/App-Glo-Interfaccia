@@ -99,6 +99,15 @@
         }
         .btn-rav:hover { box-shadow: 0 12px 25px rgba(5, 150, 105, 0.4); transform: translateY(-2px); }
 
+        .btn-monitor { 
+            height: 80px; 
+            font-size: 18px; 
+            margin-bottom: 20px; 
+            background: linear-gradient(135deg, #6366f1, #4f46e5);
+            box-shadow: 0 8px 20px rgba(99, 102, 241, 0.3);
+        }
+        .btn-monitor:hover { box-shadow: 0 12px 25px rgba(99, 102, 241, 0.4); transform: translateY(-2px); }
+
         .btn-genera { background: #0891b2; margin-bottom: 15px; }
         .btn-back { 
             background: #475569; 
@@ -173,6 +182,8 @@
             box-shadow: inset 0 0 15px rgba(0,0,0,0.2);
         }
 
+        .run-card { background: #0f172a; padding: 15px; border-radius: 12px; margin-bottom: 12px; border: 1px solid #334155; }
+        
         @keyframes fadeSlideIn {
             from { opacity: 0; transform: translateY(15px); }
             to { opacity: 1; transform: translateY(0); }
@@ -197,10 +208,24 @@
         </div>
 
         <div class="section" style="background: transparent; box-shadow: none; padding: 0; border: none;">
+            <button class="btn-menu btn-monitor" onclick="mostraSchermata('screen-monitor'); caricaMonitor();">🖥️ Monitor di Sistema</button>
             <button class="btn-menu" onclick="mostraSchermata('screen-tableau')">📊 Avvia TABLEAU</button>
             <button class="btn-menu btn-rav" onclick="mostraSchermata('screen-rav')">📝 Avvia RAV</button>
         </div>
         <button class="btn-reset" onclick="resetToken()">🔑 Cambia Token Sicurezza</button>
+    </div>
+
+    <!-- SCHERMATA MONITOR (NUOVA) -->
+    <div id="screen-monitor" class="screen">
+        <button class="btn-back" onclick="mostraSchermata('screen-home')">⬅ Torna alla Home</button>
+        <h2>Monitor di Sistema</h2>
+        
+        <div class="section">
+            <button class="btn-genera" onclick="caricaMonitor()">🔄 Aggiorna Adesso</button>
+            <div id="monitor-lista" style="margin-top: 15px;">
+                <p style="text-align:center; color:#cbd5e1; font-size:14px;">Caricamento stato server...</p>
+            </div>
+        </div>
     </div>
 
     <!-- SCHERMATA TABLEAU -->
@@ -210,7 +235,7 @@
         
         <div class="section">
             <label>Operatore</label>
-            <input type="text" id="tab_operatore" placeholder="Tuo Nome">
+            <input type="text" id="tab_operatore" placeholder="Tuo Nome" oninput="salvaOperatore(this.value)">
 
             <label>Locale</label>
             <input type="text" id="tab_locale" placeholder="Es. AI BOTTAI">
@@ -282,7 +307,7 @@
         
         <div class="section">
             <label>Operatore</label>
-            <input type="text" id="rav_operatore" placeholder="Tuo Nome">
+            <input type="text" id="rav_operatore" placeholder="Tuo Nome" oninput="salvaOperatore(this.value)">
 
             <label>Numero Promoter in turno</label>
             <input type="number" id="rav_num_promoters" value="1" min="1">
@@ -472,11 +497,12 @@
     <script>
         let GITHUB_TOKEN = localStorage.getItem('gh_token');
         let GITHUB_USER = localStorage.getItem('gh_user') || ""; 
-        const GITHUB_REPO = "BOT"; // Il nome della tua repo Privata
+        const GITHUB_REPO = "BOT"; 
 
+        // Avvio e Memoria Operatore
         window.onload = async function() {
             if(!GITHUB_TOKEN) {
-                let tokenInserito = prompt("Primo avvio: Inserisci il tuo Token GitHub per collegare l'app al server privato.");
+                let tokenInserito = prompt("Primo avvio: Inserisci il tuo Token GitHub per collegare l'app.");
                 if(tokenInserito) {
                     GITHUB_TOKEN = tokenInserito.trim();
                     localStorage.setItem('gh_token', GITHUB_TOKEN);
@@ -485,7 +511,21 @@
                 }
             }
             if(GITHUB_TOKEN) await verificaConnessione();
+
+            // Carica Operatore Salvato
+            let savedOp = localStorage.getItem('saved_operatore') || "";
+            if(savedOp) {
+                document.getElementById('tab_operatore').value = savedOp;
+                document.getElementById('rav_operatore').value = savedOp;
+            }
         };
+
+        // Salva l'operatore in tempo reale
+        function salvaOperatore(valore) {
+            localStorage.setItem('saved_operatore', valore);
+            document.getElementById('tab_operatore').value = valore;
+            document.getElementById('rav_operatore').value = valore;
+        }
 
         function resetToken() {
             let nuovoToken = prompt("Inserisci il nuovo Token GitHub:");
@@ -497,7 +537,6 @@
             }
         }
 
-        // --- MONITOR DI STATO CONNESSIONE ---
         async function verificaConnessione() {
             if(!GITHUB_TOKEN) return;
             const divStato = document.getElementById('stato-connessione');
@@ -525,6 +564,64 @@
             } catch(e) {
                 divStato.innerText = "❌ Offline (Verifica Rete)";
                 divStato.style.color = "#ef4444";
+            }
+        }
+
+        // --- NUOVO: MONITOR DI SISTEMA ---
+        async function caricaMonitor() {
+            if(!GITHUB_TOKEN || !GITHUB_USER) return;
+            const container = document.getElementById('monitor-lista');
+            container.innerHTML = '<p style="text-align:center; color:#38bdf8; font-size:14px;">📡 Contattando il server...</p>';
+            
+            try {
+                const url = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/actions/runs?per_page=8`;
+                const res = await fetch(url, {
+                    headers: { 'Authorization': `Bearer ${GITHUB_TOKEN}` }
+                });
+                
+                if(res.ok) {
+                    const data = await res.json();
+                    const runs = data.workflow_runs;
+                    
+                    if(runs.length === 0) {
+                        container.innerHTML = '<p style="text-align:center; color:#cbd5e1; font-size:14px;">Nessun bot avviato di recente.</p>';
+                        return;
+                    }
+                    
+                    let html = '';
+                    for(let run of runs) {
+                        let icona = '⏳';
+                        let colore = '#fbbf24'; 
+                        let statoTxt = 'In Coda';
+                        
+                        if(run.status === 'in_progress') { 
+                            icona = '🔄'; colore = '#38bdf8'; statoTxt = 'In Esecuzione'; 
+                        } else if(run.status === 'completed') {
+                            if(run.conclusion === 'success') { icona = '✅'; colore = '#10b981'; statoTxt = 'Completato'; }
+                            else { icona = '❌'; colore = '#ef4444'; statoTxt = 'Fallito'; }
+                        }
+                        
+                        // Data formattata
+                        const d = new Date(run.created_at);
+                        const nomeData = `${("0"+d.getDate()).slice(-2)}/${("0"+(d.getMonth()+1)).slice(-2)} ${("0"+d.getHours()).slice(-2)}:${("0"+d.getMinutes()).slice(-2)}`;
+                        
+                        html += `
+                        <div class="run-card" style="border-left: 4px solid ${colore};">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <strong style="color: #f8fafc; font-size: 15px;">${run.name}</strong>
+                                <span style="font-size: 12px; color: #cbd5e1;">${nomeData}</span>
+                            </div>
+                            <div style="margin-top: 8px; font-size: 14px; font-weight: 600; color: ${colore};">
+                                ${icona} ${statoTxt}
+                            </div>
+                        </div>`;
+                    }
+                    container.innerHTML = html;
+                } else {
+                    container.innerHTML = '<p style="text-align:center; color:#ef4444; font-size:14px;">Errore API nel caricamento.</p>';
+                }
+            } catch(e) {
+                container.innerHTML = '<p style="text-align:center; color:#ef4444; font-size:14px;">Errore di rete.</p>';
             }
         }
 
