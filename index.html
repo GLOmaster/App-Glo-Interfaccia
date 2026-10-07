@@ -5,13 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hub Automazioni GLO</title>
     
-    <!-- Importazione Font Moderno -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
     
     <style>
-        /* --- TEMA SCURO E MODERNO --- */
         body { 
             font-family: 'Montserrat', sans-serif; 
             padding: 20px; 
@@ -41,7 +39,6 @@
         
         label { 
             font-weight: 600; 
-            font-size: 14px; 
             color: #cbd5e1; 
             display: block; 
             margin-top: 15px; 
@@ -126,9 +123,10 @@
             text-transform: none; 
         }
         
-        .minutes-box { text-align: center; border-left: 4px solid #38bdf8; }
+        .minutes-box { text-align: center; border-left: 4px solid #38bdf8; position: relative;}
         .minutes-title { margin: 0; font-size: 14px; font-weight: 700; color: #cbd5e1; text-transform: uppercase; letter-spacing: 1px;}
         .minutes-value { font-size: 32px; font-weight: 700; color: #38bdf8; }
+        .user-tag { font-size: 11px; color: #10b981; margin: 0; text-transform: uppercase; letter-spacing: 1px;}
         
         .gifting-box { 
             background: #422006; 
@@ -193,11 +191,557 @@
     <div id="screen-home" class="screen active">
         <h2>HUB AUTOMAZIONI</h2>
 
-        <!-- RIQUADRO MINUTI -->
+        <!-- RIQUADRO MINUTI INTELLIGENTE -->
         <div class="section minutes-box">
             <p class="minutes-title">⏱️ Minuti GitHub Restanti</p>
-            <p style="margin: 10px 0; font-size: 18px;"><span id="minuti-residui" class="minutes-value">...</span> <span style="color: #64748b;">/ 2000</span></p>
-            <button class="btn-back" style="background: transparent; border: 1px solid #38bdf8; color: #38bdf8; font-weight: 600; padding: 10px; width: auto; margin: 5px auto 0 auto; display: block;" onclick="aggiornaMinuti()">🔄 Aggiorna</button>
+            <p style="margin: 5px 0; font-size: 18px;"><span id="minuti-residui" class="minutes-value">...</span> <span style="color: #64748b;">/ 2000</span></p>
+            <p id="nome-utente-trovato" class="user-tag">In attesa del Server...</p>
+            <button class="btn-back" style="background: transparent; border: 1px solid #38bdf8; color: #38bdf8; font-weight: 600; padding: 10px; width: auto; margin: 10px auto 0 auto; display: block;" onclick="setupUtenteEMinuti()">🔄 Aggiorna</button>
         </div>
 
-        <div
+        <div class="section" style="background: transparent; box-shadow: none; padding: 0; border: none;">
+            <button class="btn-menu" onclick="mostraSchermata('screen-tableau')">📊 Avvia TABLEAU</button>
+            <button class="btn-menu btn-rav" onclick="mostraSchermata('screen-rav')">📝 Avvia RAV</button>
+        </div>
+        <button class="btn-reset" onclick="resetToken()">🔑 Cambia Token Sicurezza</button>
+    </div>
+
+    <!-- SCHERMATA TABLEAU -->
+    <div id="screen-tableau" class="screen">
+        <button class="btn-back" onclick="mostraSchermata('screen-home')">⬅ Torna alla Home</button>
+        <h2>Configura Tableau</h2>
+        
+        <div class="section">
+            <label>Operatore</label>
+            <input type="text" id="tab_operatore" placeholder="Tuo Nome">
+
+            <label>Locale</label>
+            <input type="text" id="tab_locale" placeholder="Es. AI BOTTAI">
+
+            <label>Menu Proposte (1-10)</label>
+            <select id="tab_menu">
+                <option value="1">1. GLO</option>
+                <option value="2">2. GLO+GIFTING</option>
+                <option value="3">3. GLO+VELO</option>
+                <option value="4">4. GLO+VELO+GIFTING</option>
+                <option value="5">5. GLO+VELO+VUSE</option>
+                <option value="6">6. GLO+VELO+VUSE+GIFTING</option>
+                <option value="7">7. GLO+VUSE</option>
+                <option value="8">8. GLO+VUSE+GIFTING</option>
+                <option value="9">9. VELO+VUSE</option>
+                <option value="10">10. VELO+VUSE+GIFTING</option>
+            </select>
+
+            <label>Cicli Totali (GLO o Inserimenti)</label>
+            <input type="number" id="tab_cicli" value="5">
+        </div>
+
+        <div class="section">
+            <label>Cicli VELO (se previsti)</label>
+            <input type="number" id="tab_cicli_velo" value="0">
+            
+            <label>Prodotti VELO</label>
+            <div class="checkbox-group">
+                <label class="checkbox-label"><input type="checkbox" id="tab_velo_tutti" value="tutti" checked onchange="gestisciVeloTutti()"> Tutti (Casuale)</label>
+                <hr>
+                <label class="checkbox-label"><input type="checkbox" class="tab_velo_opt" value="1" onchange="gestisciVeloSingoli()"> 1. Spearmint 4mg</label>
+                <label class="checkbox-label"><input type="checkbox" class="tab_velo_opt" value="2" onchange="gestisciVeloSingoli()"> 2. Icy Berries 4mg</label>
+                <label class="checkbox-label"><input type="checkbox" class="tab_velo_opt" value="3" onchange="gestisciVeloSingoli()"> 3. Spearmint 10mg</label>
+                <label class="checkbox-label"><input type="checkbox" class="tab_velo_opt" value="4" onchange="gestisciVeloSingoli()"> 4. Tropical Mango 10mg</label>
+                <label class="checkbox-label"><input type="checkbox" class="tab_velo_opt" value="5" onchange="gestisciVeloSingoli()"> 5. Peppermint 14mg</label>
+                <label class="checkbox-label"><input type="checkbox" class="tab_velo_opt" value="6" onchange="gestisciVeloSingoli()"> 6. Purple Grape 8mg</label>
+            </div>
+
+            <label>Cicli VUSE (se previsti)</label>
+            <input type="number" id="tab_cicli_vuse" value="0">
+        </div>
+
+        <div class="section">
+            <label>Opzioni GIFTING</label>
+            <select id="tab_tipo_gifting" onchange="gestisciMostraGifting()">
+                <option value="nessuno">1. Nessuno</option>
+                <option value="purple_grape">2. Velo purple grape 4mg</option>
+            </select>
+
+            <div id="tab_sezione_num_gifting" class="gifting-box" style="display: none;">
+                <label>Quanti gifting in totale? <br><span style="font-size: 11px; font-weight: 400; color: #fcd34d;">(⚠️ DIMEZZA IL NUMERO INSERITO)</span></label>
+                <input type="number" id="tab_cicli_gifting" value="0" style="margin-bottom: 0;">
+            </div>
+        </div>
+
+        <div class="section">
+            <label>Orario Avvio (Opzionale)</label>
+            <input type="time" id="tab_ora_avvio">
+        </div>
+
+        <button onclick="avviaTableau()">🚀 Avvia Tableau</button>
+        <button class="btn-stop" onclick="fermaBot('bot.yml', 'Tableau')">🛑 STOP EMERGENZA</button>
+    </div>
+
+    <!-- SCHERMATA RAV -->
+    <div id="screen-rav" class="screen">
+        <button class="btn-back" onclick="mostraSchermata('screen-home')">⬅ Torna alla Home</button>
+        <h2>Configura RAV</h2>
+        
+        <div class="section">
+            <label>Operatore</label>
+            <input type="text" id="rav_operatore" placeholder="Tuo Nome">
+
+            <label>Numero Promoter in turno</label>
+            <input type="number" id="rav_num_promoters" value="1" min="1">
+            <button class="btn-genera" onclick="generaModuliRav()">⚙️ Genera Moduli</button>
+        </div>
+
+        <div id="rav_moduli_container"></div>
+
+        <div class="section">
+            <label>Orario Avvio (Opzionale)</label>
+            <input type="time" id="rav_ora_avvio">
+        </div>
+
+        <button class="btn-rav" onclick="avviaRav()">🚀 Avvia RAV (Multiplo)</button>
+        <button class="btn-stop" onclick="fermaBot('bot-rav.yml', 'RAV')">🛑 STOP EMERGENZA</button>
+
+        <!-- DATALIST NASCOSTA -->
+        <datalist id="lista-promoter">
+            <!-- PALERMO -->
+            <option value="Maurizio Lombardo"></option>
+            <option value="Marco Billitteri"></option>
+            <option value="Ermelinda Rizzo"></option>
+            <option value="Maurizio Adriano Pecorella"></option>
+            <option value="Gianluca Mancuso"></option>
+            <option value="Alessandro Vullo"></option>
+            <option value="Salvatore Vullo"></option>
+            <option value="Roberto Salerno"></option>
+            <option value="Marika Di Pace"></option>
+            <option value="Gaia Dominici"></option>
+            <option value="Gianluca Auletta"></option>
+            <option value="Veronica Lazzarini"></option>
+            <option value="Francesca Galati"></option>
+            <option value="Marzia Giosuè"></option>
+            <option value="Sara Riccobono"></option>
+            <option value="Monique Koffi"></option>
+            <option value="Paola Scrima"></option>
+            <option value="Alessia Grazioli"></option>
+            <option value="Giulia Aiello"></option>
+            <option value="Marco Di Pace"></option>
+            <!-- TRIESTE -->
+            <option value="Martina Izzo"></option>
+            <option value="Maidel Martinuzzi"></option>
+            <option value="Anna Piacentini"></option>
+            <option value="Julia Samar"></option>
+            <option value="Femke Da Pian"></option>
+            <option value="Alessandra Bernardin"></option>
+            <option value="Agata Bessarione"></option>
+            <option value="Tessi Kasi"></option>
+            <option value="Lucrezia Fabris"></option>
+            <option value="Elisa Stilli"></option>
+            <option value="Jacopo Medeot"></option>
+            <option value="Maria Francesca Riccio"></option>
+            <option value="Diletta Dolce"></option>
+            <option value="Carolina Picconi"></option>
+            <option value="Vittoria Bravin"></option>
+            <option value="Gaia Bibalo"></option>
+            <option value="Leonardo Catani"></option>
+            <option value="Daniela Feloreto"></option>
+            <option value="Michela Gerolini"></option>
+            <!-- BOLOGNA -->
+            <option value="Anna Alfieri"></option>
+            <option value="Mariella Petracca"></option>
+            <option value="Sara Ragogna"></option>
+            <option value="Sofia Palmucci"></option>
+            <option value="Alice Rapuano"></option>
+            <option value="Alessia Viscovo"></option>
+            <option value="Chiara Di Giovanni"></option>
+            <option value="Luigi Cimmino"></option>
+            <option value="Chiara Di Sipio"></option>
+            <option value="Claudia Calandro"></option>
+            <option value="Giorgia Capaldi"></option>
+            <option value="Alessandro Toso"></option>
+            <option value="Chiara Dello Iacovo"></option>
+            <option value="Simona Sellitto"></option>
+            <option value="Emma Vallicelli"></option>
+            <option value="Giorgia Rigoni"></option>
+            <option value="Lara Memmola"></option>
+            <option value="Giada Mirri"></option>
+            <option value="Gaia Perricone"></option>
+            <option value="Giada Ferrazzi"></option>
+            <option value="Chiara Amadei"></option>
+            <option value="Elena Montemaggi"></option>
+            <option value="Edoardo Talenti"></option>
+            <option value="Elisabetta Tavano"></option>
+            <option value="Giulia Assunta Paganelli"></option>
+            <option value="Ginevra Lenzi"></option>
+            <option value="Luisa Amelia Piccolo"></option>
+            <option value="Simona Toppi"></option>
+            <option value="Margherita Mombelli"></option>
+            <option value="Giulia Martelli"></option>
+            <option value="Alice La Cascia"></option>
+            <option value="Edison Caka"></option>
+            <option value="Lorenzo Di Scipio"></option>
+            <option value="Giovanni Valzani"></option>
+            <option value="Camilla D'Alimonte"></option>
+            <option value="Nidal Fatnassi"></option>
+            <option value="Giada Cosco"></option>
+            <option value="Eugenia Barbone"></option>
+            <option value="Giulia Cerchiara"></option>
+            <option value="Mirko Langone"></option>
+            <option value="Laura Naibo"></option>
+            <option value="Arianna Boscolo"></option>
+            <option value="Simone Tilocca"></option>
+            <option value="Ilaria Di Pretoro"></option>
+            <option value="Agenzia1"></option>
+            <option value="Agenzia2"></option>
+            <option value="Agenzia3"></option>
+            <option value="Denise Enei Simion"></option>
+            <option value="Flor Ruggeri"></option>
+            <option value="Alice Tuscano"></option>
+            <option value="Vittoria Gammone"></option>
+            <option value="Greta Collina"></option>
+            <option value="Jacqueline Vagnini"></option>
+            <option value="Beatrice Gioannini"></option>
+            <option value="Martina Raga"></option>
+            <option value="Vittoria Santoni"></option>
+            <option value="Gessica Fede"></option>
+            <option value="Moreno Tognetto"></option>
+            <option value="Anna Casadio"></option>
+            <option value="Doha Mesrour"></option>
+            <option value="Cristiana Canova"></option>
+            <option value="Anna Morgani"></option>
+            <option value="Martina Breviglieri"></option>
+            <option value="Elisa Mataloni"></option>
+            <option value="Alessia Mini"></option>
+            <option value="Katia Rossi"></option>
+            <option value="Emma Bucci"></option>
+            <option value="Stella Bagli"></option>
+            <option value="Alessia Allegrucci"></option>
+            <option value="Martina Battarra"></option>
+            <option value="Elda Piccinini"></option>
+            <option value="Sofia Pedretti"></option>
+            <option value="Claudia Boninsegni"></option>
+            <option value="Giorgia Bucci"></option>
+            <option value="Erica Barducci"></option>
+            <option value="Monika Gjolaj"></option>
+            <option value="Margherita Pezzolesi"></option>
+            <option value="Manila Scerra"></option>
+            <option value="Gaja Memmola"></option>
+            <!-- VERONA -->
+            <option value="Giorgia Corato"></option>
+            <option value="Daniele Del Prete"></option>
+            <option value="Lorenzo Donatiello"></option>
+            <option value="Giulia Berzacola"></option>
+            <option value="Lisa Frison"></option>
+            <option value="Andreas Busetto"></option>
+            <option value="Lucrezia Bissoli"></option>
+            <option value="Anna Peroni"></option>
+            <option value="Marco Bizzotto"></option>
+            <option value="Federica Bolognini"></option>
+            <option value="Niccolò Marchesan"></option>
+            <option value="Eugenio Terzi"></option>
+            <option value="Davide Macaluso"></option>
+            <option value="Giulia Signorini"></option>
+            <option value="Angelica Righetti"></option>
+            <option value="Alessandro Patrini"></option>
+            <option value="Manar Ennaimi"></option>
+            <option value="Giulia Buzzi"></option>
+            <option value="Matteo Possidoni"></option>
+            <option value="Michela Rizzi"></option>
+            <option value="Anna Costalonga"></option>
+            <option value="Benedetta Ghidini"></option>
+            <option value="Yuri Bazzani"></option>
+            <option value="Beatrice Risottino"></option>
+            <option value="Alice Zanna"></option>
+            <option value="Margherita Piazza"></option>
+            <option value="Mailen Delaini"></option>
+            <option value="Yasmine Razuoali"></option>
+            <!-- TRENTO -->
+            <option value="Angelica Chini"></option>
+            <option value="Virginia Milani"></option>
+            <option value="Elia Borolameotti"></option>
+            <option value="Camilla Mele Cortese"></option>
+            <option value="Sara Sevignani"></option>
+            <option value="Arianna Bertuol"></option>
+            <option value="Piercarlo Vardanega"></option>
+            <option value="Elena Nardin"></option>
+            <option value="Marco Dalla Benedetta"></option>
+            <option value="Irene Cirivello"></option>
+            <option value="Alice Giovane"></option>
+            <option value="Alice"></option>
+            <option value="Amelia"></option>
+        </datalist>
+    </div>
+
+    <!-- SCRIPT INTELLIGENTE -->
+    <script>
+        let GITHUB_TOKEN = localStorage.getItem('gh_token');
+        let GITHUB_USER = localStorage.getItem('gh_user') || ""; 
+        const GITHUB_REPO = "BOT"; // Il nome della tua repo Privata
+
+        window.onload = async function() {
+            if(!GITHUB_TOKEN) {
+                let tokenInserito = prompt("Primo avvio: Inserisci il tuo Token GitHub per collegare l'app al server privato.");
+                if(tokenInserito) {
+                    GITHUB_TOKEN = tokenInserito.trim();
+                    localStorage.setItem('gh_token', GITHUB_TOKEN);
+                } else {
+                    alert("Attenzione: Senza token l'app non funzionerà.");
+                }
+            }
+            // Scatta l'auto-riconoscimento
+            if(GITHUB_TOKEN) await setupUtenteEMinuti();
+        };
+
+        function resetToken() {
+            let nuovoToken = prompt("Inserisci il nuovo Token GitHub:");
+            if(nuovoToken) {
+                GITHUB_TOKEN = nuovoToken.trim();
+                localStorage.setItem('gh_token', GITHUB_TOKEN);
+                localStorage.removeItem('gh_user'); // Forza il ricalcolo dell'utente
+                setupUtenteEMinuti();
+            }
+        }
+
+        // --- FUNZIONE CENTRALE: TROVA L'UTENTE E I MINUTI ---
+        async function setupUtenteEMinuti() {
+            if(!GITHUB_TOKEN) return;
+            const divMinuti = document.getElementById('minuti-residui');
+            const divUtente = document.getElementById('nome-utente-trovato');
+            
+            divMinuti.innerText = "...";
+            divMinuti.style.color = "#38bdf8";
+            divMinuti.style.fontSize = "32px";
+            divUtente.innerText = "Sincronizzazione API in corso...";
+            divUtente.style.color = "#fbbf24";
+
+            try {
+                // 1. AUTO-SCOPERTA DELL'UTENTE
+                const userRes = await fetch("https://api.github.com/user", {
+                    headers: { 'Authorization': `Bearer ${GITHUB_TOKEN}` }
+                });
+                
+                if(!userRes.ok) {
+                    divMinuti.innerText = "Token Errato";
+                    divMinuti.style.fontSize = "22px";
+                    divMinuti.style.color = "#ef4444";
+                    divUtente.innerText = "Autenticazione Fallita.";
+                    divUtente.style.color = "#ef4444";
+                    return;
+                }
+                
+                const userData = await userRes.json();
+                GITHUB_USER = userData.login; // Salva il VERO nome utente
+                localStorage.setItem('gh_user', GITHUB_USER);
+                divUtente.innerText = `✅ Connesso come: ${GITHUB_USER}`;
+                divUtente.style.color = "#10b981";
+
+                // 2. RECUPERO DEI MINUTI CON L'UTENTE GIUSTO
+                const billUrl = `https://api.github.com/users/${GITHUB_USER}/settings/billing/actions`;
+                const res = await fetch(billUrl, {
+                    headers: {
+                        'Accept': 'application/vnd.github.v3+json',
+                        'Authorization': `Bearer ${GITHUB_TOKEN}`
+                    }
+                });
+                
+                if(res.ok) {
+                    const data = await res.json();
+                    const minutiRestanti = 2000 - data.total_minutes_used;
+                    
+                    divMinuti.innerText = minutiRestanti;
+                    if(minutiRestanti < 500) divMinuti.style.color = "#fbbf24"; 
+                    if(minutiRestanti < 100) divMinuti.style.color = "#ef4444"; 
+                } else {
+                    const err = await res.json();
+                    divMinuti.innerText = "Errore Lettura";
+                    divMinuti.style.fontSize = "18px";
+                    divMinuti.style.color = "#ef4444";
+                    divUtente.innerText = `Dettaglio: ${err.message}`;
+                    divUtente.style.color = "#ef4444";
+                }
+            } catch(e) {
+                divMinuti.innerText = "Offline";
+                divMinuti.style.fontSize = "22px";
+                divMinuti.style.color = "#ef4444";
+                divUtente.innerText = "Verifica la connessione internet";
+            }
+        }
+
+        // Navigazione
+        function mostraSchermata(idSchermata) {
+            document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
+            document.getElementById(idSchermata).classList.add('active');
+            window.scrollTo(0,0);
+        }
+
+        // ------------------ LOGICA TABLEAU ------------------
+        function gestisciVeloTutti() {
+            if (document.getElementById('tab_velo_tutti').checked) {
+                document.querySelectorAll('.tab_velo_opt').forEach(cb => cb.checked = false);
+            }
+        }
+        function gestisciVeloSingoli() {
+            const scelti = document.querySelectorAll('.tab_velo_opt:checked').length;
+            if (scelti > 0) document.getElementById('tab_velo_tutti').checked = false;
+            else document.getElementById('tab_velo_tutti').checked = true;
+        }
+        function ottieniStringaVelo() {
+            if (document.getElementById('tab_velo_tutti').checked) return "tutti";
+            let arrayScelti = [];
+            document.querySelectorAll('.tab_velo_opt:checked').forEach(cb => arrayScelti.push(cb.value));
+            return arrayScelti.join(",");
+        }
+        function gestisciMostraGifting() {
+            const selezione = document.getElementById('tab_tipo_gifting').value;
+            const sezioneNum = document.getElementById('tab_sezione_num_gifting');
+            if (selezione === "purple_grape") sezioneNum.style.display = "block";
+            else {
+                sezioneNum.style.display = "none";
+                document.getElementById('tab_cicli_gifting').value = "0";
+            }
+        }
+
+        function avviaTableau() {
+            const dati = {
+                operatore: document.getElementById('tab_operatore').value,
+                locale: document.getElementById('tab_locale').value,
+                menu: document.getElementById('tab_menu').value,
+                cicli: document.getElementById('tab_cicli').value || "0",
+                cicli_velo: document.getElementById('tab_cicli_velo').value || "0",
+                prodotti_velo: ottieniStringaVelo(),
+                cicli_vuse: document.getElementById('tab_cicli_vuse').value || "0",
+                cicli_gifting: document.getElementById('tab_cicli_gifting').value || "0"
+            };
+
+            const orario = document.getElementById('tab_ora_avvio').value;
+            gestisciTimer([dati], orario, 'bot.yml', 'Tableau');
+        }
+
+        // ------------------ LOGICA RAV ------------------
+        function generaModuliRav() {
+            const num = parseInt(document.getElementById('rav_num_promoters').value) || 1;
+            const container = document.getElementById('rav_moduli_container');
+            container.innerHTML = ''; 
+
+            for(let i=1; i<=num; i++) {
+                const div = document.createElement('div');
+                div.className = 'section dynamic-section';
+                div.innerHTML = `
+                    <h4 style="margin-top:0; margin-bottom: 10px; color:#10b981; font-size: 18px; font-weight: 700; letter-spacing: 0.5px;">🧑‍💼 Promoter ${i}</h4>
+                    <label>Nome Promoter</label>
+                    <input type="text" id="rav_promoter_${i}" list="lista-promoter" placeholder="Inizia a digitare o tocca...">
+                    <label>Cicli GLO</label>
+                    <input type="number" id="rav_n_glo_${i}" value="0">
+                    <label>Cicli VELO</label>
+                    <input type="number" id="rav_n_velo_${i}" value="0">
+                    <label>Cicli VUSE</label>
+                    <input type="number" id="rav_n_vuse_${i}" value="0">
+                `;
+                container.appendChild(div);
+            }
+        }
+        generaModuliRav();
+
+        function avviaRav() {
+            const operatore = document.getElementById('rav_operatore').value || "Sconosciuto";
+            const num = parseInt(document.getElementById('rav_num_promoters').value) || 1;
+            const orario = document.getElementById('rav_ora_avvio').value;
+
+            let payloadsMultipli = [];
+
+            for(let i=1; i<=num; i++) {
+                const promoter = document.getElementById(`rav_promoter_${i}`).value;
+                if(!promoter) {
+                    alert(`Attenzione: Inserisci il nome per il Promoter ${i}!`);
+                    return; 
+                }
+                payloadsMultipli.push({
+                    operatore: operatore, promoter: promoter,
+                    n_glo: document.getElementById(`rav_n_glo_${i}`).value || "0",
+                    n_velo: document.getElementById(`rav_n_velo_${i}`).value || "0",
+                    n_vuse: document.getElementById(`rav_n_vuse_${i}`).value || "0"
+                });
+            }
+            gestisciTimer(payloadsMultipli, orario, 'bot-rav.yml', 'RAV');
+        }
+
+        // ------------------ MOTORE DI INVIO ------------------
+        function gestisciTimer(payloads, orario, workflowFile, nomeBot) {
+            if(!GITHUB_TOKEN || !GITHUB_USER) {
+                alert("Manca il Token o l'utente. Attendi la sincronizzazione o cambia il token.");
+                return;
+            }
+
+            if(orario) {
+                const oraAttuale = new Date();
+                const [ore, minuti] = orario.split(':');
+                const oraAvvio = new Date();
+                oraAvvio.setHours(parseInt(ore, 10), parseInt(minuti, 10), 0, 0);
+
+                if (oraAvvio.getTime() <= oraAttuale.getTime()) oraAvvio.setDate(oraAvvio.getDate() + 1);
+                
+                const attesa = oraAvvio.getTime() - oraAttuale.getTime();
+                alert(`✅ Programmati!\nLascia l'app in background fino alle ${orario}`);
+                setTimeout(() => { inviaRichiestaMultipla(payloads, workflowFile, nomeBot); }, attesa);
+            } else {
+                inviaRichiestaMultipla(payloads, workflowFile, nomeBot);
+            }
+        }
+
+        async function inviaRichiestaMultipla(payloads, workflowFile, nomeBot) {
+            let successCount = 0;
+            
+            for(let dati of payloads) {
+                const url = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/actions/workflows/${workflowFile}/dispatches`;
+                try {
+                    const res = await fetch(url, {
+                        method: 'POST',
+                        headers: {
+                            'Accept': 'application/vnd.github.v3+json',
+                            'Authorization': `Bearer ${GITHUB_TOKEN}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ ref: 'main', inputs: dati })
+                    });
+                    if(res.ok) successCount++;
+                } catch(e) { console.error("Errore di rete"); }
+                await new Promise(r => setTimeout(r, 500));
+            }
+
+            if(successCount > 0) {
+                alert(`✅ Inviati ${successCount} moduli con successo al server privato!`);
+                setTimeout(setupUtenteEMinuti, 5000); 
+            } else {
+                alert(`Errore di invio a ${workflowFile}. Verifica che il file esista nella Repo.`);
+            }
+        }
+
+        // ------------------ STOP EMERGENZA ------------------
+        async function fermaBot(workflowFile, nomeBot) {
+            if(!GITHUB_TOKEN || !GITHUB_USER) return alert("Manca Token/Utente.");
+
+            const conferma = confirm(`⚠️ Sicuro di voler ARRESTARE i server di ${nomeBot}?`);
+            if(!conferma) return;
+
+            const urlRuns = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/actions/workflows/${workflowFile}/runs?per_page=10`;
+            try {
+                const res = await fetch(urlRuns, { headers: { 'Authorization': `Bearer ${GITHUB_TOKEN}` }});
+                if(res.ok) {
+                    const data = await res.json();
+                    const activeRuns = data.workflow_runs.filter(r => r.status === 'in_progress' || r.status === 'queued');
+
+                    if(activeRuns.length === 0) return alert(`Nessun processo attivo per ${nomeBot}.`);
+
+                    let stoppedCount = 0;
+                    for(let run of activeRuns) {
+                        const cancelUrl = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/actions/runs/${run.id}/cancel`;
+                        const cancelRes = await fetch(cancelUrl, { method: 'POST', headers: { 'Authorization': `Bearer ${GITHUB_TOKEN}` }});
+                        if(cancelRes.ok) stoppedCount++;
+                    }
+                    if(stoppedCount > 0) alert(`🛑 ${stoppedCount} server fermati.`);
+                    else alert(`Errore nell'arrestare i processi.`);
+                } else alert(`Errore API.`);
+            } catch(e) { alert(`Errore di connessione a GitHub.`); }
+        }
+    </script>
+</body>
+</html>
