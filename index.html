@@ -123,10 +123,9 @@
             text-transform: none; 
         }
         
-        .minutes-box { text-align: center; border-left: 4px solid #38bdf8; position: relative;}
-        .minutes-title { margin: 0; font-size: 14px; font-weight: 700; color: #cbd5e1; text-transform: uppercase; letter-spacing: 1px;}
-        .minutes-value { font-size: 32px; font-weight: 700; color: #38bdf8; }
-        .user-tag { font-size: 11px; color: #10b981; margin: 0; text-transform: uppercase; letter-spacing: 1px;}
+        .status-box { text-align: center; border-left: 4px solid #10b981; position: relative;}
+        .status-title { margin: 0 0 10px 0; font-size: 14px; font-weight: 700; color: #cbd5e1; text-transform: uppercase; letter-spacing: 1px;}
+        .status-value { font-size: 16px; font-weight: 600; margin: 0;}
         
         .gifting-box { 
             background: #422006; 
@@ -191,12 +190,10 @@
     <div id="screen-home" class="screen active">
         <h2>HUB AUTOMAZIONI</h2>
 
-        <!-- RIQUADRO MINUTI INTELLIGENTE -->
-        <div class="section minutes-box">
-            <p class="minutes-title">⏱️ Minuti GitHub Restanti</p>
-            <p style="margin: 5px 0; font-size: 18px;"><span id="minuti-residui" class="minutes-value">...</span> <span style="color: #64748b;">/ 2000</span></p>
-            <p id="nome-utente-trovato" class="user-tag">In attesa del Server...</p>
-            <button class="btn-back" style="background: transparent; border: 1px solid #38bdf8; color: #38bdf8; font-weight: 600; padding: 10px; width: auto; margin: 10px auto 0 auto; display: block;" onclick="setupUtenteEMinuti()">🔄 Aggiorna</button>
+        <!-- MONITOR DI STATO SERVER -->
+        <div class="section status-box">
+            <p class="status-title">📡 Stato di Rete</p>
+            <p id="stato-connessione" class="status-value" style="color: #fbbf24;">Sincronizzazione in corso...</p>
         </div>
 
         <div class="section" style="background: transparent; box-shadow: none; padding: 0; border: none;">
@@ -487,8 +484,7 @@
                     alert("Attenzione: Senza token l'app non funzionerà.");
                 }
             }
-            // Scatta l'auto-riconoscimento
-            if(GITHUB_TOKEN) await setupUtenteEMinuti();
+            if(GITHUB_TOKEN) await verificaConnessione();
         };
 
         function resetToken() {
@@ -496,73 +492,39 @@
             if(nuovoToken) {
                 GITHUB_TOKEN = nuovoToken.trim();
                 localStorage.setItem('gh_token', GITHUB_TOKEN);
-                localStorage.removeItem('gh_user'); // Forza il ricalcolo dell'utente
-                setupUtenteEMinuti();
+                localStorage.removeItem('gh_user'); 
+                verificaConnessione();
             }
         }
 
-        // --- FUNZIONE CENTRALE: TROVA L'UTENTE E I MINUTI ---
-        async function setupUtenteEMinuti() {
+        // --- MONITOR DI STATO CONNESSIONE ---
+        async function verificaConnessione() {
             if(!GITHUB_TOKEN) return;
-            const divMinuti = document.getElementById('minuti-residui');
-            const divUtente = document.getElementById('nome-utente-trovato');
+            const divStato = document.getElementById('stato-connessione');
             
-            divMinuti.innerText = "...";
-            divMinuti.style.color = "#38bdf8";
-            divMinuti.style.fontSize = "32px";
-            divUtente.innerText = "Sincronizzazione API in corso...";
-            divUtente.style.color = "#fbbf24";
+            divStato.innerText = "Sincronizzazione in corso...";
+            divStato.style.color = "#fbbf24";
 
             try {
-                // 1. AUTO-SCOPERTA DELL'UTENTE
                 const userRes = await fetch("https://api.github.com/user", {
                     headers: { 'Authorization': `Bearer ${GITHUB_TOKEN}` }
                 });
                 
                 if(!userRes.ok) {
-                    divMinuti.innerText = "Token Errato";
-                    divMinuti.style.fontSize = "22px";
-                    divMinuti.style.color = "#ef4444";
-                    divUtente.innerText = "Autenticazione Fallita.";
-                    divUtente.style.color = "#ef4444";
+                    divStato.innerText = "❌ Errore: Token non valido.";
+                    divStato.style.color = "#ef4444";
                     return;
                 }
                 
                 const userData = await userRes.json();
-                GITHUB_USER = userData.login; // Salva il VERO nome utente
+                GITHUB_USER = userData.login; 
                 localStorage.setItem('gh_user', GITHUB_USER);
-                divUtente.innerText = `✅ Connesso come: ${GITHUB_USER}`;
-                divUtente.style.color = "#10b981";
+                divStato.innerText = `✅ Connesso come: ${GITHUB_USER}`;
+                divStato.style.color = "#10b981";
 
-                // 2. RECUPERO DEI MINUTI CON L'UTENTE GIUSTO
-                const billUrl = `https://api.github.com/users/${GITHUB_USER}/settings/billing/actions`;
-                const res = await fetch(billUrl, {
-                    headers: {
-                        'Accept': 'application/vnd.github.v3+json',
-                        'Authorization': `Bearer ${GITHUB_TOKEN}`
-                    }
-                });
-                
-                if(res.ok) {
-                    const data = await res.json();
-                    const minutiRestanti = 2000 - data.total_minutes_used;
-                    
-                    divMinuti.innerText = minutiRestanti;
-                    if(minutiRestanti < 500) divMinuti.style.color = "#fbbf24"; 
-                    if(minutiRestanti < 100) divMinuti.style.color = "#ef4444"; 
-                } else {
-                    const err = await res.json();
-                    divMinuti.innerText = "Errore Lettura";
-                    divMinuti.style.fontSize = "18px";
-                    divMinuti.style.color = "#ef4444";
-                    divUtente.innerText = `Dettaglio: ${err.message}`;
-                    divUtente.style.color = "#ef4444";
-                }
             } catch(e) {
-                divMinuti.innerText = "Offline";
-                divMinuti.style.fontSize = "22px";
-                divMinuti.style.color = "#ef4444";
-                divUtente.innerText = "Verifica la connessione internet";
+                divStato.innerText = "❌ Offline (Verifica Rete)";
+                divStato.style.color = "#ef4444";
             }
         }
 
@@ -709,7 +671,6 @@
 
             if(successCount > 0) {
                 alert(`✅ Inviati ${successCount} moduli con successo al server privato!`);
-                setTimeout(setupUtenteEMinuti, 5000); 
             } else {
                 alert(`Errore di invio a ${workflowFile}. Verifica che il file esista nella Repo.`);
             }
