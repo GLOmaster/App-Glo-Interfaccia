@@ -9,6 +9,12 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
     
+    <script>
+        window.onerror = function(msg, url, line) {
+            alert("Errore di Sistema (Riga " + line + "):\n" + msg + "\n\nRicarica l'app chiudendola dal multitasking.");
+        };
+    </script>
+
     <style>
         body { 
             font-family: 'Montserrat', sans-serif; 
@@ -184,6 +190,87 @@
 
         .run-card { background: #0f172a; padding: 15px; border-radius: 12px; margin-bottom: 12px; border: 1px solid #334155; }
         
+        .btn-sniper {
+            background: rgba(220, 38, 38, 0.1);
+            border: 1px solid #dc2626;
+            color: #ef4444;
+            padding: 6px 12px;
+            font-size: 12px;
+            width: auto;
+            border-radius: 6px;
+            margin-top: 0;
+        }
+        .btn-sniper:active { background: #dc2626; color: white; }
+
+        .btn-info {
+            background: #0ea5e9;
+            color: white;
+            border: none;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-left: 8px;
+            text-transform: none;
+            width: auto;
+            display: inline-block;
+        }
+
+        .btn-half {
+            flex: 1;
+            margin-top: 0;
+            margin-bottom: 0;
+            padding: 14px;
+            font-size: 15px;
+        }
+
+        /* MODALE DI CARICAMENTO DINAMICO */
+        #loading-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(5px);
+            z-index: 9999;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+        .loader-box {
+            background: #1e293b;
+            border: 1px solid #334155;
+            padding: 30px;
+            border-radius: 16px;
+            text-align: center;
+            width: 80%;
+            max-width: 320px;
+            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.5);
+        }
+        .spinner {
+            width: 45px; height: 45px;
+            border: 4px solid #334155;
+            border-top: 4px solid #38bdf8;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 20px auto;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        .btn-hide-loader {
+            background: transparent;
+            border: 1px solid #475569;
+            color: #94a3b8;
+            font-size: 12px;
+            padding: 8px 20px;
+            margin-top: 25px;
+            border-radius: 8px;
+            width: auto;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .btn-hide-loader:active { background: #334155; color: white; }
+
         @keyframes fadeSlideIn {
             from { opacity: 0; transform: translateY(15px); }
             to { opacity: 1; transform: translateY(0); }
@@ -197,14 +284,22 @@
 </head>
 <body>
 
+    <!-- MODALE DI CARICAMENTO DINAMICO CON TASTO NASCONDI -->
+    <div id="loading-overlay">
+        <div class="loader-box">
+            <div class="spinner"></div>
+            <p id="loader-text" style="font-weight: 600; font-size: 15px; color: #f8fafc; margin: 0;">Connessione a GitHub...</p>
+            <button class="btn-hide-loader" onclick="document.getElementById('loading-overlay').style.display='none'">Nascondi</button>
+        </div>
+    </div>
+
     <!-- SCHERMATA PRINCIPALE -->
     <div id="screen-home" class="screen active">
         <h2>HUB AUTOMAZIONI</h2>
 
-        <!-- MONITOR DI STATO SERVER -->
         <div class="section status-box">
             <p class="status-title">📡 Stato di Rete</p>
-            <p id="stato-connessione" class="status-value" style="color: #fbbf24;">Sincronizzazione in corso...</p>
+            <p id="stato-connessione" class="status-value" style="color: #fbbf24;">In attesa di Sincronizzazione...</p>
         </div>
 
         <div class="section" style="background: transparent; box-shadow: none; padding: 0; border: none;">
@@ -221,9 +316,13 @@
         <h2>Monitor di Sistema</h2>
         
         <div class="section">
-            <button class="btn-genera" onclick="caricaMonitor()">🔄 Aggiorna Adesso</button>
+            <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                <button class="btn-genera btn-half" onclick="caricaMonitor()">🔄 Aggiorna Adesso</button>
+                <button class="btn-stop btn-half" onclick="svuotaMemoria()">🗑️ Pulisci Memoria</button>
+            </div>
+            
             <div id="monitor-lista" style="margin-top: 15px;">
-                <p style="text-align:center; color:#cbd5e1; font-size:14px;">Caricamento stato server...</p>
+                <p style="text-align:center; color:#cbd5e1; font-size:14px;">In attesa di caricamento...</p>
             </div>
         </div>
     </div>
@@ -297,7 +396,7 @@
         </div>
 
         <button onclick="avviaTableau()">🚀 Avvia Tableau</button>
-        <button class="btn-stop" onclick="fermaBot('bot.yml', 'Tableau')">🛑 STOP EMERGENZA</button>
+        <button class="btn-stop" onclick="fermaBot('bot.yml', 'Tableau')">🛑 STOP EMERGENZA GENERALE</button>
     </div>
 
     <!-- SCHERMATA RAV -->
@@ -322,11 +421,9 @@
         </div>
 
         <button class="btn-rav" onclick="avviaRav()">🚀 Avvia RAV (Multiplo)</button>
-        <button class="btn-stop" onclick="fermaBot('bot-rav.yml', 'RAV')">🛑 STOP EMERGENZA</button>
+        <button class="btn-stop" onclick="fermaBot('bot-rav.yml', 'RAV')">🛑 STOP EMERGENZA GENERALE</button>
 
-        <!-- DATALIST NASCOSTA -->
         <datalist id="lista-promoter">
-            <!-- PALERMO -->
             <option value="Maurizio Lombardo"></option>
             <option value="Marco Billitteri"></option>
             <option value="Ermelinda Rizzo"></option>
@@ -347,7 +444,6 @@
             <option value="Alessia Grazioli"></option>
             <option value="Giulia Aiello"></option>
             <option value="Marco Di Pace"></option>
-            <!-- TRIESTE -->
             <option value="Martina Izzo"></option>
             <option value="Maidel Martinuzzi"></option>
             <option value="Anna Piacentini"></option>
@@ -367,7 +463,6 @@
             <option value="Leonardo Catani"></option>
             <option value="Daniela Feloreto"></option>
             <option value="Michela Gerolini"></option>
-            <!-- BOLOGNA -->
             <option value="Anna Alfieri"></option>
             <option value="Mariella Petracca"></option>
             <option value="Sara Ragogna"></option>
@@ -447,7 +542,6 @@
             <option value="Margherita Pezzolesi"></option>
             <option value="Manila Scerra"></option>
             <option value="Gaja Memmola"></option>
-            <!-- VERONA -->
             <option value="Giorgia Corato"></option>
             <option value="Daniele Del Prete"></option>
             <option value="Lorenzo Donatiello"></option>
@@ -476,7 +570,6 @@
             <option value="Margherita Piazza"></option>
             <option value="Mailen Delaini"></option>
             <option value="Yasmine Razuoali"></option>
-            <!-- TRENTO -->
             <option value="Angelica Chini"></option>
             <option value="Virginia Milani"></option>
             <option value="Elia Borolameotti"></option>
@@ -493,63 +586,110 @@
         </datalist>
     </div>
 
-    <!-- SCRIPT INTELLIGENTE CON ANTI-SPRECO -->
+    <!-- SCRIPT CORAZZATO CON LOADER DINAMICO REALE E TASTO NASCONDI -->
     <script>
-        let GITHUB_TOKEN = localStorage.getItem('gh_token');
-        let GITHUB_USER = localStorage.getItem('gh_user') || ""; 
-        const GITHUB_REPO = "BOT"; 
+        var GITHUB_TOKEN = "";
+        var GITHUB_USER = "";
+        var GITHUB_REPO = "BOT"; 
 
-        // Avvio e Memoria Operatore
+        try {
+            GITHUB_TOKEN = localStorage.getItem('gh_token') || "";
+            GITHUB_USER = localStorage.getItem('gh_user') || "";
+        } catch(e) {
+            console.warn("Memoria inaccessibile");
+        }
+
         window.onload = async function() {
-            if(!GITHUB_TOKEN) {
-                let tokenInserito = prompt("Primo avvio: Inserisci il tuo Token GitHub per collegare l'app.");
-                if(tokenInserito) {
-                    GITHUB_TOKEN = tokenInserito.trim();
-                    localStorage.setItem('gh_token', GITHUB_TOKEN);
-                } else {
-                    alert("Attenzione: Senza token l'app non funzionerà.");
+            try {
+                var cronologia = JSON.parse(localStorage.getItem('hub_cronologia') || '[]');
+                var limite = new Date().getTime() - (30 * 24 * 60 * 60 * 1000);
+                var pulita = cronologia.filter(function(item) { return item.time > limite; });
+                if(pulita.length !== cronologia.length) {
+                    localStorage.setItem('hub_cronologia', JSON.stringify(pulita));
                 }
-            }
-            if(GITHUB_TOKEN) await verificaConnessione();
+            } catch(e) {}
 
-            // Carica Operatore Salvato
-            let savedOp = localStorage.getItem('saved_operatore') || "";
-            if(savedOp) {
-                document.getElementById('tab_operatore').value = savedOp;
-                document.getElementById('rav_operatore').value = savedOp;
+            try {
+                if(!GITHUB_TOKEN) {
+                    var tokenInserito = prompt("Primo avvio: Inserisci il tuo Token GitHub.");
+                    if(tokenInserito) {
+                        GITHUB_TOKEN = tokenInserito.trim();
+                        localStorage.setItem('gh_token', GITHUB_TOKEN);
+                    } else {
+                        alert("Senza token l'app non funzionerà.");
+                    }
+                }
+                
+                if(GITHUB_TOKEN) {
+                    await verificaConnessione();
+                }
+
+                var savedOp = localStorage.getItem('saved_operatore') || "";
+                if(savedOp) {
+                    document.getElementById('tab_operatore').value = savedOp;
+                    document.getElementById('rav_operatore').value = savedOp;
+                }
+                
+                generaModuliRav();
+            } catch(e) {
+                alert("Errore di caricamento: " + e.message);
             }
         };
 
         function vibraErrore() {
-            if ("vibrate" in navigator) navigator.vibrate([200, 100, 200]);
+            try { if ("vibrate" in navigator) navigator.vibrate([200, 100, 200]); } catch(e) {}
         }
 
         function salvaOperatore(valore) {
-            localStorage.setItem('saved_operatore', valore);
-            document.getElementById('tab_operatore').value = valore;
-            document.getElementById('rav_operatore').value = valore;
+            try {
+                localStorage.setItem('saved_operatore', valore);
+                document.getElementById('tab_operatore').value = valore;
+                document.getElementById('rav_operatore').value = valore;
+            } catch(e) {}
+        }
+
+        function salvaInCronologiaLocale(nomeBot, dati) {
+            try {
+                var cronologia = JSON.parse(localStorage.getItem('hub_cronologia') || '[]');
+                cronologia.push({ time: new Date().getTime(), bot: nomeBot, dati: dati });
+                localStorage.setItem('hub_cronologia', JSON.stringify(cronologia));
+            } catch(e) {}
+        }
+
+        function svuotaMemoria() {
+            var conferma = confirm("🗑️ Vuoi cancellare definitivamente tutta la memoria dei dettagli sul tuo telefono?");
+            if(conferma) {
+                try {
+                    localStorage.removeItem('hub_cronologia');
+                    alert("✅ Memoria locale svuotata con successo!");
+                } catch(e) {
+                    alert("Errore di memoria.");
+                }
+            }
         }
 
         function resetToken() {
-            let nuovoToken = prompt("Inserisci il nuovo Token GitHub:");
+            var nuovoToken = prompt("Inserisci il nuovo Token GitHub:");
             if(nuovoToken) {
                 GITHUB_TOKEN = nuovoToken.trim();
-                localStorage.setItem('gh_token', GITHUB_TOKEN);
-                localStorage.removeItem('gh_user'); 
+                try {
+                    localStorage.setItem('gh_token', GITHUB_TOKEN);
+                    localStorage.removeItem('gh_user'); 
+                } catch(e) {}
                 verificaConnessione();
             }
         }
 
         async function verificaConnessione() {
             if(!GITHUB_TOKEN) return;
-            const divStato = document.getElementById('stato-connessione');
+            var divStato = document.getElementById('stato-connessione');
             
             divStato.innerText = "Sincronizzazione in corso...";
             divStato.style.color = "#fbbf24";
 
             try {
-                const userRes = await fetch("https://api.github.com/user", {
-                    headers: { 'Authorization': `Bearer ${GITHUB_TOKEN}` }
+                var userRes = await fetch("https://api.github.com/user", {
+                    headers: { 'Authorization': 'Bearer ' + GITHUB_TOKEN }
                 });
                 
                 if(!userRes.ok) {
@@ -558,10 +698,10 @@
                     return;
                 }
                 
-                const userData = await userRes.json();
+                var userData = await userRes.json();
                 GITHUB_USER = userData.login; 
-                localStorage.setItem('gh_user', GITHUB_USER);
-                divStato.innerText = `✅ Connesso come: ${GITHUB_USER}`;
+                try { localStorage.setItem('gh_user', GITHUB_USER); } catch(e){}
+                divStato.innerText = "✅ Connesso come: " + GITHUB_USER;
                 divStato.style.color = "#10b981";
 
             } catch(e) {
@@ -570,59 +710,61 @@
             }
         }
 
-        // --- MONITOR DI SISTEMA (AGGIORNATO CON NOME OPERATORE) ---
         async function caricaMonitor() {
             if(!GITHUB_TOKEN || !GITHUB_USER) return;
-            const container = document.getElementById('monitor-lista');
+            var container = document.getElementById('monitor-lista');
             container.innerHTML = '<p style="text-align:center; color:#38bdf8; font-size:14px;">📡 Contattando il server...</p>';
             
             try {
-                const url = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/actions/runs?per_page=8`;
-                const res = await fetch(url, {
-                    headers: { 'Authorization': `Bearer ${GITHUB_TOKEN}` }
+                var url = "https://api.github.com/repos/" + GITHUB_USER + "/" + GITHUB_REPO + "/actions/runs?per_page=12";
+                var res = await fetch(url, {
+                    headers: { 'Authorization': 'Bearer ' + GITHUB_TOKEN }
                 });
                 
                 if(res.ok) {
-                    const data = await res.json();
-                    const runs = data.workflow_runs;
+                    var data = await res.json();
+                    var runs = data.workflow_runs;
                     
                     if(runs.length === 0) {
                         container.innerHTML = '<p style="text-align:center; color:#cbd5e1; font-size:14px;">Nessun bot avviato di recente.</p>';
                         return;
                     }
                     
-                    let html = '';
-                    for(let run of runs) {
-                        let icona = '⏳';
-                        let colore = '#fbbf24'; 
-                        let statoTxt = 'In Coda';
+                    var html = '';
+                    for(var i=0; i<runs.length; i++) {
+                        var run = runs[i];
+                        var icona = '⏳';
+                        var colore = '#fbbf24'; 
+                        var statoTxt = 'In Coda';
+                        var btnSniper = '';
                         
-                        if(run.status === 'in_progress') { 
-                            icona = '🔄'; colore = '#38bdf8'; statoTxt = 'In Esecuzione'; 
+                        if(run.status === 'in_progress' || run.status === 'queued') { 
+                            if(run.status === 'in_progress') { icona = '🔄'; colore = '#38bdf8'; statoTxt = 'In Esecuzione'; }
+                            btnSniper = '<button class="btn-sniper" onclick="fermaSingoloBot(' + run.id + ')">🛑 STOP</button>';
                         } else if(run.status === 'completed') {
                             if(run.conclusion === 'success') { icona = '✅'; colore = '#10b981'; statoTxt = 'Completato'; }
                             else { icona = '❌'; colore = '#ef4444'; statoTxt = 'Fallito'; }
                         }
                         
-                        const d = new Date(run.created_at);
-                        const nomeData = `${("0"+d.getDate()).slice(-2)}/${("0"+(d.getMonth()+1)).slice(-2)} ${("0"+d.getHours()).slice(-2)}:${("0"+d.getMinutes()).slice(-2)}`;
+                        var d = new Date(run.created_at);
+                        var nomeData = ("0"+d.getDate()).slice(-2) + "/" + ("0"+(d.getMonth()+1)).slice(-2) + " " + ("0"+d.getHours()).slice(-2) + ":" + ("0"+d.getMinutes()).slice(-2);
                         
-                        // Utilizza il titolo dinamico per mostrare l'Operatore (vedi istruzioni YML)
-                        let operatoreTesto = run.display_title;
+                        var operatoreTesto = run.display_title || run.name;
+                        var btnInfo = '<span class="btn-info" onclick="mostraDettagli(\'' + run.created_at + '\')">ℹ️ Info</span>';
 
-                        html += `
-                        <div class="run-card" style="border-left: 4px solid ${colore};">
-                            <div style="display: flex; justify-content: space-between; align-items: center;">
-                                <strong style="color: #f8fafc; font-size: 15px;">${run.name}</strong>
-                                <span style="font-size: 12px; color: #cbd5e1;">${nomeData}</span>
-                            </div>
-                            <div style="font-size: 13px; color: #94a3b8; margin-top: 4px;">
-                                👤 Operatore: <strong style="color: #cbd5e1;">${operatoreTesto}</strong>
-                            </div>
-                            <div style="margin-top: 8px; font-size: 14px; font-weight: 600; color: ${colore};">
-                                ${icona} ${statoTxt}
-                            </div>
-                        </div>`;
+                        html += '<div class="run-card" style="border-left: 4px solid ' + colore + ';">' +
+                            '<div style="display: flex; justify-content: space-between; align-items: center;">' +
+                                '<strong style="color: #f8fafc; font-size: 15px;">' + run.name + btnInfo + '</strong>' +
+                                '<span style="font-size: 12px; color: #cbd5e1;">' + nomeData + '</span>' +
+                            '</div>' +
+                            '<div style="font-size: 13px; color: #94a3b8; margin-top: 4px;">' +
+                                '👤 Operatore: <strong style="color: #cbd5e1;">' + operatoreTesto + '</strong>' +
+                            '</div>' +
+                            '<div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">' +
+                                '<div style="font-size: 14px; font-weight: 600; color: ' + colore + ';">' + icona + ' ' + statoTxt + '</div>' +
+                                btnSniper +
+                            '</div>' +
+                        '</div>';
                     }
                     container.innerHTML = html;
                 } else {
@@ -633,33 +775,87 @@
             }
         }
 
-        // Navigazione
+        function mostraDettagli(runTimeStr) {
+            try {
+                var runTime = new Date(runTimeStr).getTime();
+                var cronologia = JSON.parse(localStorage.getItem('hub_cronologia') || '[]');
+                var trovati = cronologia.filter(function(item) {
+                    return Math.abs(item.time - runTime) < (3 * 60000); 
+                });
+
+                if(trovati.length === 0) {
+                    alert("📄 Dettagli non trovati nel tuo telefono.");
+                    return;
+                }
+
+                var msg = "📊 DETTAGLI REGISTRATI SUL TELEFONO:\n---------------------------------------\n";
+                for(var i=0; i<trovati.length; i++) {
+                    var d = trovati[i].dati;
+                    if(d.locale) {
+                        msg += "📍 Locale: " + d.locale + "\n";
+                        msg += "🔄 GLO: " + d.cicli + " | VELO: " + d.cicli_velo + " | VUSE: " + d.cicli_vuse + "\n";
+                    } else {
+                        msg += "🧑‍💼 Promoter: " + d.promoter + "\n";
+                        msg += "🔄 GLO: " + d.n_glo + " | VELO: " + d.n_velo + " | VUSE: " + d.n_vuse + "\n";
+                    }
+                    msg += "---------------------------------------\n";
+                }
+                alert(msg);
+            } catch(e) {
+                alert("Errore nella lettura dei dettagli.");
+            }
+        }
+
+        async function fermaSingoloBot(runId) {
+            if(!GITHUB_TOKEN || !GITHUB_USER) return;
+            vibraErrore();
+            var conferma = confirm("⚠️ Vuoi interrompere questo specifico server?");
+            if(!conferma) return;
+
+            try {
+                var cancelUrl = "https://api.github.com/repos/" + GITHUB_USER + "/" + GITHUB_REPO + "/actions/runs/" + runId + "/cancel";
+                var res = await fetch(cancelUrl, { method: 'POST', headers: { 'Authorization': 'Bearer ' + GITHUB_TOKEN }});
+                if(res.ok) {
+                    alert("🛑 Server fermato con successo.");
+                    caricaMonitor(); 
+                } else {
+                    alert("Errore nell'arrestare il processo.");
+                }
+            } catch(e) {
+                alert("Errore di connessione a GitHub.");
+            }
+        }
+
         function mostraSchermata(idSchermata) {
-            document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
+            var screens = document.querySelectorAll('.screen');
+            for(var i=0; i<screens.length; i++) {
+                screens[i].classList.remove('active');
+            }
             document.getElementById(idSchermata).classList.add('active');
             window.scrollTo(0,0);
         }
 
-        // ------------------ LOGICA TABLEAU ------------------
         function gestisciVeloTutti() {
             if (document.getElementById('tab_velo_tutti').checked) {
-                document.querySelectorAll('.tab_velo_opt').forEach(cb => cb.checked = false);
+                var cbs = document.querySelectorAll('.tab_velo_opt');
+                for(var i=0; i<cbs.length; i++) cbs[i].checked = false;
             }
         }
         function gestisciVeloSingoli() {
-            const scelti = document.querySelectorAll('.tab_velo_opt:checked').length;
+            var scelti = document.querySelectorAll('.tab_velo_opt:checked').length;
             if (scelti > 0) document.getElementById('tab_velo_tutti').checked = false;
             else document.getElementById('tab_velo_tutti').checked = true;
         }
         function ottieniStringaVelo() {
             if (document.getElementById('tab_velo_tutti').checked) return "tutti";
-            let arrayScelti = [];
-            document.querySelectorAll('.tab_velo_opt:checked').forEach(cb => arrayScelti.push(cb.value));
+            var arrayScelti = [];
+            var cbs = document.querySelectorAll('.tab_velo_opt:checked');
+            for(var i=0; i<cbs.length; i++) arrayScelti.push(cbs[i].value);
             return arrayScelti.join(",");
         }
         function gestisciMostraGifting() {
-            const selezione = document.getElementById('tab_tipo_gifting').value;
-            const sezioneNum = document.getElementById('tab_sezione_num_gifting');
+            var selezione = document.getElementById('tab_tipo_gifting').value;
+            var sezioneNum = document.getElementById('tab_sezione_num_gifting');
             if (selezione === "purple_grape") sezioneNum.style.display = "block";
             else {
                 sezioneNum.style.display = "none";
@@ -668,24 +864,23 @@
         }
 
         function avviaTableau() {
-            // RETE DI SICUREZZA ANTI-SPRECO
-            const operatore = document.getElementById('tab_operatore').value.trim();
-            const locale = document.getElementById('tab_locale').value.trim();
-            const nGlo = parseInt(document.getElementById('tab_cicli').value) || 0;
-            const nVelo = parseInt(document.getElementById('tab_cicli_velo').value) || 0;
-            const nVuse = parseInt(document.getElementById('tab_cicli_vuse').value) || 0;
-            const nGift = parseInt(document.getElementById('tab_cicli_gifting').value) || 0;
+            var operatore = document.getElementById('tab_operatore').value.trim();
+            var locale = document.getElementById('tab_locale').value.trim();
+            var nGlo = parseInt(document.getElementById('tab_cicli').value) || 0;
+            var nVelo = parseInt(document.getElementById('tab_cicli_velo').value) || 0;
+            var nVuse = parseInt(document.getElementById('tab_cicli_vuse').value) || 0;
+            var nGift = parseInt(document.getElementById('tab_cicli_gifting').value) || 0;
 
             if(!operatore) { vibraErrore(); alert("⚠️ Errore: Inserisci il nome dell'Operatore!"); return; }
             if(!locale) { vibraErrore(); alert("⚠️ Errore: Inserisci il nome del Locale!"); return; }
             
             if(nGlo === 0 && nVelo === 0 && nVuse === 0 && nGift === 0) {
                 vibraErrore();
-                alert("🛑 BLOCCO ANTI-SPRECO: Tutti i contatori sono a 0.\nHai dimenticato di inserire i cicli. Invio annullato per non sprecare minuti server.");
+                alert("🛑 BLOCCO ANTI-SPRECO: Tutti i contatori sono a 0.");
                 return;
             }
 
-            const dati = {
+            var dati = {
                 operatore: operatore,
                 locale: locale,
                 menu: document.getElementById('tab_menu').value,
@@ -696,59 +891,54 @@
                 cicli_gifting: nGift.toString()
             };
 
-            const orario = document.getElementById('tab_ora_avvio').value;
+            var orario = document.getElementById('tab_ora_avvio').value;
             gestisciTimer([dati], orario, 'bot.yml', 'Tableau');
         }
 
-        // ------------------ LOGICA RAV ------------------
         function generaModuliRav() {
-            const num = parseInt(document.getElementById('rav_num_promoters').value) || 1;
-            const container = document.getElementById('rav_moduli_container');
+            var num = parseInt(document.getElementById('rav_num_promoters').value) || 1;
+            var container = document.getElementById('rav_moduli_container');
             container.innerHTML = ''; 
 
-            for(let i=1; i<=num; i++) {
-                const div = document.createElement('div');
+            for(var i=1; i<=num; i++) {
+                var div = document.createElement('div');
                 div.className = 'section dynamic-section';
-                div.innerHTML = `
-                    <h4 style="margin-top:0; margin-bottom: 10px; color:#10b981; font-size: 18px; font-weight: 700; letter-spacing: 0.5px;">🧑‍💼 Promoter ${i}</h4>
-                    <label>Nome Promoter</label>
-                    <input type="text" id="rav_promoter_${i}" list="lista-promoter" placeholder="Inizia a digitare o tocca...">
-                    <label>Cicli GLO</label>
-                    <input type="number" id="rav_n_glo_${i}" value="0">
-                    <label>Cicli VELO</label>
-                    <input type="number" id="rav_n_velo_${i}" value="0">
-                    <label>Cicli VUSE</label>
-                    <input type="number" id="rav_n_vuse_${i}" value="0">
-                `;
+                div.innerHTML = '<h4 style="margin-top:0; margin-bottom: 10px; color:#10b981; font-size: 18px; font-weight: 700;">🧑‍💼 Promoter ' + i + '</h4>' +
+                    '<label>Nome Promoter</label>' +
+                    '<input type="text" id="rav_promoter_' + i + '" list="lista-promoter" placeholder="Inizia a digitare o tocca...">' +
+                    '<label>Cicli GLO</label>' +
+                    '<input type="number" id="rav_n_glo_' + i + '" value="0">' +
+                    '<label>Cicli VELO</label>' +
+                    '<input type="number" id="rav_n_velo_' + i + '" value="0">' +
+                    '<label>Cicli VUSE</label>' +
+                    '<input type="number" id="rav_n_vuse_' + i + '" value="0">';
                 container.appendChild(div);
             }
         }
-        generaModuliRav();
 
         function avviaRav() {
-            // RETE DI SICUREZZA ANTI-SPRECO
-            const operatore = document.getElementById('rav_operatore').value.trim();
+            var operatore = document.getElementById('rav_operatore').value.trim();
             if(!operatore) { vibraErrore(); alert("⚠️ Errore: Inserisci il tuo nome (Operatore)!"); return; }
 
-            const num = parseInt(document.getElementById('rav_num_promoters').value) || 1;
-            const orario = document.getElementById('rav_ora_avvio').value;
-            let payloadsMultipli = [];
+            var num = parseInt(document.getElementById('rav_num_promoters').value) || 1;
+            var orario = document.getElementById('rav_ora_avvio').value;
+            var payloadsMultipli = [];
 
-            for(let i=1; i<=num; i++) {
-                const promoter = document.getElementById(`rav_promoter_${i}`).value.trim();
-                const nGlo = parseInt(document.getElementById(`rav_n_glo_${i}`).value) || 0;
-                const nVelo = parseInt(document.getElementById(`rav_n_velo_${i}`).value) || 0;
-                const nVuse = parseInt(document.getElementById(`rav_n_vuse_${i}`).value) || 0;
+            for(var i=1; i<=num; i++) {
+                var promoter = document.getElementById('rav_promoter_' + i).value.trim();
+                var nGlo = parseInt(document.getElementById('rav_n_glo_' + i).value) || 0;
+                var nVelo = parseInt(document.getElementById('rav_n_velo_' + i).value) || 0;
+                var nVuse = parseInt(document.getElementById('rav_n_vuse_' + i).value) || 0;
 
                 if(!promoter) { 
                     vibraErrore(); 
-                    alert(`⚠️ Errore: Inserisci il nome per il Promoter ${i}!`); 
+                    alert("⚠️ Errore: Inserisci il nome per il Promoter " + i + "!"); 
                     return; 
                 }
 
                 if(nGlo === 0 && nVelo === 0 && nVuse === 0) {
                     vibraErrore();
-                    alert(`🛑 BLOCCO ANTI-SPRECO (Promoter ${i}):\nTutti i contatori sono a 0. Invio annullato per non sprecare minuti server.`);
+                    alert("🛑 BLOCCO ANTI-SPRECO (Promoter " + i + "): Contatori a 0.");
                     return;
                 }
 
@@ -763,87 +953,111 @@
             gestisciTimer(payloadsMultipli, orario, 'bot-rav.yml', 'RAV');
         }
 
-        // ------------------ MOTORE DI INVIO ------------------
         function gestisciTimer(payloads, orario, workflowFile, nomeBot) {
             if(!GITHUB_TOKEN || !GITHUB_USER) {
-                alert("Manca il Token o l'utente. Attendi la sincronizzazione o cambia il token.");
+                alert("Manca il Token o l'utente.");
                 return;
             }
 
-            if ("vibrate" in navigator) navigator.vibrate(50); // Feedback click
+            try { if ("vibrate" in navigator) navigator.vibrate(50); } catch(e){}
 
             if(orario) {
-                const oraAttuale = new Date();
-                const [ore, minuti] = orario.split(':');
-                const oraAvvio = new Date();
-                oraAvvio.setHours(parseInt(ore, 10), parseInt(minuti, 10), 0, 0);
+                var oraAttuale = new Date();
+                var parti = orario.split(':');
+                var oraAvvio = new Date();
+                oraAvvio.setHours(parseInt(parti[0], 10), parseInt(parti[1], 10), 0, 0);
 
                 if (oraAvvio.getTime() <= oraAttuale.getTime()) oraAvvio.setDate(oraAvvio.getDate() + 1);
                 
-                const attesa = oraAvvio.getTime() - oraAttuale.getTime();
-                alert(`✅ Programmati!\nLascia l'app in background fino alle ${orario}`);
-                setTimeout(() => { inviaRichiestaMultipla(payloads, workflowFile, nomeBot); }, attesa);
+                var attesa = oraAvvio.getTime() - oraAttuale.getTime();
+                alert("✅ Programmati!\nLascia l'app in background fino alle " + orario);
+                setTimeout(function() { inviaRichiestaMultipla(payloads, workflowFile, nomeBot); }, attesa);
             } else {
                 inviaRichiestaMultipla(payloads, workflowFile, nomeBot);
             }
         }
 
+        // --- MOTORE DI INVIO CON LOADER DINAMICO A 3 FASI REALI E TASTO NASCONDI ---
         async function inviaRichiestaMultipla(payloads, workflowFile, nomeBot) {
-            let successCount = 0;
+            var overlay = document.getElementById('loading-overlay');
+            var loaderText = document.getElementById('loader-text');
+            overlay.style.display = 'flex';
+
+            var successCount = 0;
             
-            for(let dati of payloads) {
-                const url = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/actions/workflows/${workflowFile}/dispatches`;
-                try {
-                    const res = await fetch(url, {
+            try {
+                loaderText.innerText = "🌐 Invio dati al cloud di GitHub...";
+                await new Promise(r => setTimeout(r, 600));
+
+                for(var i=0; i<payloads.length; i++) {
+                    salvaInCronologiaLocale(nomeBot, payloads[i]);
+
+                    var url = "https://api.github.com/repos/" + GITHUB_USER + "/" + GITHUB_REPO + "/actions/workflows/" + workflowFile + "/dispatches";
+                    var res = await fetch(url, {
                         method: 'POST',
                         headers: {
                             'Accept': 'application/vnd.github.v3+json',
-                            'Authorization': `Bearer ${GITHUB_TOKEN}`,
+                            'Authorization': 'Bearer ' + GITHUB_TOKEN,
                             'Content-Type': 'application/json'
                         },
-                        body: JSON.stringify({ ref: 'main', inputs: dati })
+                        body: JSON.stringify({ ref: 'main', inputs: payloads[i] })
                     });
                     if(res.ok) successCount++;
-                } catch(e) { console.error("Errore di rete"); }
+                    await new Promise(r => setTimeout(r, 400));
+                }
+
+                loaderText.innerText = "⚙️ Registrazione coda sul server...";
+                await new Promise(r => setTimeout(r, 800)); 
+
+                loaderText.innerText = "🚀 Avvio Macchina Virtuale completato!";
                 await new Promise(r => setTimeout(r, 500));
+
+            } catch(e) {
+                console.error("Errore di rete");
+            } finally {
+                overlay.style.display = 'none';
             }
 
             if(successCount > 0) {
-                if ("vibrate" in navigator) navigator.vibrate([100, 50, 100]); // Successo!
-                alert(`✅ Inviati ${successCount} moduli con successo al server privato!`);
+                try { if ("vibrate" in navigator) navigator.vibrate([100, 50, 100]); } catch(e){}
+                alert("✅ Inviati " + successCount + " moduli con successo!");
             } else {
                 vibraErrore();
-                alert(`Errore di invio a ${workflowFile}. Verifica che il file esista nella Repo.`);
+                alert("Errore di invio a " + workflowFile + ".");
             }
         }
 
-        // ------------------ STOP EMERGENZA ------------------
         async function fermaBot(workflowFile, nomeBot) {
-            if(!GITHUB_TOKEN || !GITHUB_USER) return alert("Manca Token/Utente.");
+            if(!GITHUB_TOKEN || !GITHUB_USER) { alert("Manca Token/Utente."); return; }
 
             vibraErrore();
-            const conferma = confirm(`⚠️ Sicuro di voler ARRESTARE i server di ${nomeBot}?`);
+            var conferma = confirm("⚠️ Sicuro di voler ARRESTARE tutti i server generali di " + nomeBot + "?");
             if(!conferma) return;
 
-            const urlRuns = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/actions/workflows/${workflowFile}/runs?per_page=10`;
+            var urlRuns = "https://api.github.com/repos/" + GITHUB_USER + "/" + GITHUB_REPO + "/actions/workflows/" + workflowFile + "/runs?per_page=10";
             try {
-                const res = await fetch(urlRuns, { headers: { 'Authorization': `Bearer ${GITHUB_TOKEN}` }});
+                var res = await fetch(urlRuns, { headers: { 'Authorization': 'Bearer ' + GITHUB_TOKEN }});
                 if(res.ok) {
-                    const data = await res.json();
-                    const activeRuns = data.workflow_runs.filter(r => r.status === 'in_progress' || r.status === 'queued');
+                    var data = await res.json();
+                    var activeRuns = [];
+                    for(var i=0; i<data.workflow_runs.length; i++) {
+                        if(data.workflow_runs[i].status === 'in_progress' || data.workflow_runs[i].status === 'queued') {
+                            activeRuns.push(data.workflow_runs[i]);
+                        }
+                    }
 
-                    if(activeRuns.length === 0) return alert(`Nessun processo attivo per ${nomeBot}.`);
+                    if(activeRuns.length === 0) { alert("Nessun processo attivo per " + nomeBot + "."); return; }
 
-                    let stoppedCount = 0;
-                    for(let run of activeRuns) {
-                        const cancelUrl = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/actions/runs/${run.id}/cancel`;
-                        const cancelRes = await fetch(cancelUrl, { method: 'POST', headers: { 'Authorization': `Bearer ${GITHUB_TOKEN}` }});
+                    var stoppedCount = 0;
+                    for(var j=0; j<activeRuns.length; j++) {
+                        var cancelUrl = "https://api.github.com/repos/" + GITHUB_USER + "/" + GITHUB_REPO + "/actions/runs/" + activeRuns[j].id + "/cancel";
+                        var cancelRes = await fetch(cancelUrl, { method: 'POST', headers: { 'Authorization': 'Bearer ' + GITHUB_TOKEN }});
                         if(cancelRes.ok) stoppedCount++;
                     }
-                    if(stoppedCount > 0) alert(`🛑 ${stoppedCount} server fermati.`);
-                    else alert(`Errore nell'arrestare i processi.`);
-                } else alert(`Errore API.`);
-            } catch(e) { alert(`Errore di connessione a GitHub.`); }
+                    if(stoppedCount > 0) alert("🛑 " + stoppedCount + " server fermati.");
+                    else alert("Errore nell'arrestare i processi.");
+                } else alert("Errore API.");
+            } catch(e) { alert("Errore di connessione a GitHub."); }
         }
     </script>
 </body>
