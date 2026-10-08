@@ -231,7 +231,7 @@
             position: absolute; top: 100%; left: 0; right: 0;
             background: #0f172a; border: 1px solid #38bdf8;
             border-radius: 8px; margin-top: 4px; z-index: 1000;
-            max-height: 180px; overflow-y: auto; display: none;
+            max-height: 220px; overflow-y: auto; display: none;
             box-shadow: 0 10px 15px -3px rgba(0,0,0,0.5);
         }
         .autocomplete-item {
@@ -350,11 +350,9 @@
         
         <div class="section">
             <label>Operatore</label>
-            <!-- CAMPO OPERATORE: Testo libero (no tendina, no blocchi) -->
             <input type="text" id="tab_operatore" placeholder="Tuo Nome" oninput="salvaOperatore(this.value)">
 
             <label>Locale</label>
-            <!-- CAMPO LOCALE: Tendina personalizzata e intelligente -->
             <div class="autocomplete-container">
                 <input type="text" id="tab_locale" class="autocomplete-input" autocomplete="off" placeholder="Inizia a digitare..." oninput="filtraSuggerimenti(this, 'locale')" onfocus="filtraSuggerimenti(this, 'locale')">
                 <div class="autocomplete-list"></div>
@@ -427,7 +425,6 @@
         
         <div class="section">
             <label>Operatore</label>
-            <!-- CAMPO OPERATORE RAV: Testo libero -->
             <input type="text" id="rav_operatore" placeholder="Tuo Nome" oninput="salvaOperatore(this.value)">
 
             <label>Numero Promoter in turno</label>
@@ -445,7 +442,7 @@
         <button class="btn-rav" onclick="avviaRav()">🚀 Avvia RAV (Multiplo)</button>
         <button class="btn-stop" onclick="fermaBot('bot-rav.yml', 'RAV')">🛑 STOP EMERGENZA GENERALE</button>
 
-        <!-- DATABASE NASCOSTO: I DATI REALI (Invisibili all'utente) -->
+        <!-- DATABASE NASCOSTO -->
         <div style="display:none;">
             <datalist id="lista-locali">
                 <option value="AI BOTTAI"></option>
@@ -653,7 +650,6 @@
         var GITHUB_USER = "";
         var GITHUB_REPO = "BOT"; 
         
-        // ARRAY MASTER PER LA RICERCA FUZZY
         var masterPromoterList = [];
         var masterLocaleList = [];
 
@@ -665,7 +661,6 @@
         }
 
         window.onload = async function() {
-            // ESTRAZIONE NOMI PER LA RICERCA CUSTOM
             var dlPromoter = document.getElementById('lista-promoter');
             if(dlPromoter) {
                 var optsP = dlPromoter.getElementsByTagName('option');
@@ -710,7 +705,6 @@
             }
         };
 
-        // --- SISTEMA DI MENU A TENDINA CUSTOM E RICERCA FUZZY (ANTI-BLOCCO TASTIERA) ---
         function calcolaDistanza(a, b) {
             if(a.length === 0) return b.length;
             if(b.length === 0) return a.length;
@@ -740,7 +734,8 @@
             var filtrati = [];
 
             if (val.length === 0) {
-                filtrati = dataList.slice(0, 40); // Mostra i primi 40 se clicchi a vuoto
+                // Rimosso il limite .slice(0,40): ORA LI MOSTRA TUTTI E 150+
+                filtrati = dataList; 
             } else {
                 for(var i=0; i<dataList.length; i++) {
                     var nome = dataList[i].toLowerCase();
@@ -785,14 +780,12 @@
             }
         }
 
-        // Nascondi le tendine se clicchi fuori
         document.addEventListener('click', function(e) {
             if(!e.target.classList.contains('autocomplete-input')) {
                 var lists = document.querySelectorAll('.autocomplete-list');
                 for(var i=0; i<lists.length; i++) lists[i].style.display = 'none';
             }
         });
-        // --------------------------------------------------------------------------------
 
         function vibraErrore() {
             try { if ("vibrate" in navigator) navigator.vibrate([200, 100, 200]); } catch(e) {}
@@ -1062,7 +1055,6 @@
                 var div = document.createElement('div');
                 div.className = 'section dynamic-section';
                 
-                // CAMPO PROMOTER: Tendina custom integrata (nessun blocco tastiera)
                 div.innerHTML = '<h4 style="margin-top:0; margin-bottom: 10px; color:#10b981; font-size: 18px; font-weight: 700;">🧑‍💼 Promoter ' + i + '</h4>' +
                     '<label>Nome Promoter</label>' +
                     '<div class="autocomplete-container">' +
