@@ -107,7 +107,6 @@
             <label>Cerca Nome (Locale o Promoter)</label>
             
             <div style="display: flex; gap: 10px; align-items: flex-start;">
-                <!-- Ora anche la ricerca Database usa l'autocomplete intelligente -->
                 <div class="autocomplete-container" style="flex: 1;">
                     <input type="text" id="db_cerca_nome" class="autocomplete-input" autocomplete="off" placeholder="Es. AI BOTTAI" oninput="filtraSuggerimenti(this, 'all')" onfocus="filtraSuggerimenti(this, 'all')">
                     <div class="autocomplete-list"></div>
@@ -487,29 +486,54 @@
             } catch(e) {}
         };
 
-        // --- GESTIONE DATABASE E SINCRONIZZAZIONE ---
+        // --- GESTIONE DATABASE CON RICERCA PIU' INTELLIGENTE ---
         function controllaDatabase() {
-            var nome = document.getElementById('db_cerca_nome').value.trim();
-            if(!nome) return;
+            var nomeInput = document.getElementById('db_cerca_nome').value.trim().toLowerCase();
+            if(!nomeInput) return;
             
             var msg = document.getElementById('db_messaggio');
             var boxAggiungi = document.getElementById('db_box_aggiungi');
             document.getElementById('db_risultato').style.display = 'block';
 
-            var trovatoInMaster = masterPromoterList.some(m => m.toLowerCase() === nome.toLowerCase()) || 
-                                  masterLocaleList.some(m => m.toLowerCase() === nome.toLowerCase());
-            var trovatoInCustom = customPromoters.some(p => p.nome.toLowerCase() === nome.toLowerCase()) || 
-                                  customLocali.some(l => l.nome.toLowerCase() === nome.toLowerCase());
+            var fullMaster = masterPromoterList.concat(masterLocaleList);
+            var fullCustom = customPromoters.map(p => p.nome).concat(customLocali.map(l => l.nome));
 
-            if(trovatoInMaster || trovatoInCustom) {
-                msg.innerText = "✅ '" + nome + "' è GIA' PRESENTE nel sistema.";
+            // Controllo 1: Esatto (stessa parola)
+            var esattoM = fullMaster.find(m => m.toLowerCase() === nomeInput);
+            var esattoC = fullCustom.find(m => m.toLowerCase() === nomeInput);
+
+            if(esattoM || esattoC) {
+                var trovato = esattoM || esattoC;
+                document.getElementById('db_cerca_nome').value = trovato;
+                msg.innerText = "✅ '" + trovato + "' è GIA' PRESENTE nel sistema.";
                 msg.style.color = "#10b981";
                 boxAggiungi.style.display = 'none';
-            } else {
-                msg.innerText = "❌ '" + nome + "' NON TROVATO.\nVuoi aggiungerlo alla memoria del telefono?";
-                msg.style.color = "#ef4444";
-                boxAggiungi.style.display = 'block';
+                return;
             }
+
+            // Controllo 2: Parziale (se scrivi "bottai" capisce "AI BOTTAI")
+            var parzialiM = fullMaster.filter(m => m.toLowerCase().includes(nomeInput));
+            var parzialiC = fullCustom.filter(m => m.toLowerCase().includes(nomeInput));
+            
+            if(parzialiM.length === 1 && parzialiC.length === 0) {
+                document.getElementById('db_cerca_nome').value = parzialiM[0];
+                msg.innerText = "✅ Trovato: '" + parzialiM[0] + "' è GIA' PRESENTE nel sistema.";
+                msg.style.color = "#10b981";
+                boxAggiungi.style.display = 'none';
+                return;
+            }
+            if(parzialiC.length === 1 && parzialiM.length === 0) {
+                document.getElementById('db_cerca_nome').value = parzialiC[0];
+                msg.innerText = "✅ Trovato: '" + parzialiC[0] + "' è GIA' PRESENTE (Nei tuoi Custom).";
+                msg.style.color = "#10b981";
+                boxAggiungi.style.display = 'none';
+                return;
+            }
+
+            // Se fallisce (Nessun match o troppi match confusi)
+            msg.innerText = "❌ Nessun match esatto per '" + document.getElementById('db_cerca_nome').value.trim() + "'.\nVuoi aggiungerlo alla memoria del telefono?";
+            msg.style.color = "#ef4444";
+            boxAggiungi.style.display = 'block';
         }
 
         function mostraFormAggiunta(tipo) {
@@ -523,7 +547,7 @@
                     document.getElementById('db_risultato').style.display = 'none';
                 }
             } else {
-                var id_locale = prompt("Inserisci l'ID del locale '" + nome + "':\n(Es: ai_bottai_1)");
+                var id_locale = prompt("Inserisci l'ID (codice Python) del locale '" + nome + "':\n(Es: ai_bottai_1)");
                 if(!id_locale) return;
                 var pwd_locale = prompt("Inserisci la PASSWORD del locale '" + nome + "':\n(Es: PARD_HORECA_2025)");
                 if(id_locale && pwd_locale) {
@@ -555,7 +579,7 @@
             }
         }
 
-        // --- SISTEMA FUZZY E LISTE ---
+        // --- SISTEMA FUZZY ANTI-CRASH ---
         function calcolaDistanza(a, b) {
             if(a.length === 0) return b.length;
             if(b.length === 0) return a.length;
@@ -576,18 +600,22 @@
             var listContainer = inputEl.nextElementSibling; 
             if (!listContainer || !listContainer.classList.contains('autocomplete-list')) return;
 
-            var fullList = [];
+            // Metodo di unione liste ultra-compatibile (evita i crash su vecchi Android)
+            var rawList = [];
             if (tipo === 'promoter') {
-                fullList = masterPromoterList.concat(customPromoters.map(p => p.nome));
+                rawList = masterPromoterList.concat(customPromoters.map(p => p.nome));
             } else if (tipo === 'locale') {
-                fullList = masterLocaleList.concat(customLocali.map(l => l.nome));
+                rawList = masterLocaleList.concat(customLocali.map(l => l.nome));
             } else if (tipo === 'all') {
-                // Uniamo tutti i locali e tutti i promoter per la ricerca globale
-                fullList = masterPromoterList.concat(customPromoters.map(p => p.nome))
-                                             .concat(masterLocaleList)
-                                             .concat(customLocali.map(l => l.nome));
-                // Rimuove eventuali doppioni
-                fullList = [...new Set(fullList)];
+                rawList = masterPromoterList.concat(customPromoters.map(p => p.nome))
+                                            .concat(masterLocaleList)
+                                            .concat(customLocali.map(l => l.nome));
+            }
+
+            // Rimuoviamo i doppioni in modo sicuro
+            var fullList = [];
+            for(var k=0; k<rawList.length; k++) {
+                if(fullList.indexOf(rawList[k]) === -1) fullList.push(rawList[k]);
             }
 
             listContainer.innerHTML = '';
@@ -604,8 +632,8 @@
                     for(var j=0; j<paroleInput.length; j++) {
                         var pIn = paroleInput[j];
                         if(pIn.length < 3) continue; 
-                        for(var k=0; k<paroleNome.length; k++) {
-                            if(calcolaDistanza(pIn, paroleNome[k].substring(0, pIn.length)) <= 2) { matchTrovato = true; break; }
+                        for(var z=0; z<paroleNome.length; z++) {
+                            if(calcolaDistanza(pIn, paroleNome[z].substring(0, pIn.length)) <= 2) { matchTrovato = true; break; }
                         }
                         if(matchTrovato) break;
                     }
@@ -628,7 +656,6 @@
                         e.preventDefault(); 
                         inputEl.value = this.innerText.replace(" ⭐", "");
                         listContainer.style.display = 'none';
-                        // Rimuove l'avviso di ricerca se l'utente clicca una voce
                         document.getElementById('db_risultato').style.display = 'none';
                     };
                     listContainer.appendChild(div);
@@ -832,7 +859,7 @@
         async function fermaSingoloBot(runId) {
             if(!GITHUB_TOKEN || !GITHUB_USER) return;
             vibraErrore();
-            var conferma = confirm("⚠️ Vuoi interromড়িয়ে questo specifico server?");
+            var conferma = confirm("⚠️ Vuoi interrompere questo specifico server?");
             if(!conferma) return;
 
             try {
