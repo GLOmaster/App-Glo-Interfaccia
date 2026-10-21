@@ -98,16 +98,21 @@
         <button class="btn-reset" onclick="resetToken()">🔑 Cambia Token Sicurezza</button>
     </div>
 
-    <!-- GESTIONE DATABASE -->
+    <!-- GESTIONE DATABASE CON RICERCA INTELLIGENTE -->
     <div id="screen-db" class="screen">
         <button class="btn-back" onclick="mostraSchermata('screen-home')">⬅ Torna alla Home</button>
         <h2>Database Custom</h2>
         <div class="section">
             <p style="font-size: 14px; color: #94a3b8; margin-top: 0;">Aggiungi qui i Locali o i Promoter mancanti. Verranno salvati nel telefono e suggeriti in automatico nei menu.</p>
             <label>Cerca Nome (Locale o Promoter)</label>
-            <div style="display: flex; gap: 10px;">
-                <input type="text" id="db_cerca_nome" placeholder="Es. Mario Rossi o AI BOTTAI">
-                <button class="btn-genera" style="width: auto; margin-top: 0; margin-bottom: 0; padding: 0 20px;" onclick="controllaDatabase()">Cerca</button>
+            
+            <div style="display: flex; gap: 10px; align-items: flex-start;">
+                <!-- Ora anche la ricerca Database usa l'autocomplete intelligente -->
+                <div class="autocomplete-container" style="flex: 1;">
+                    <input type="text" id="db_cerca_nome" class="autocomplete-input" autocomplete="off" placeholder="Es. AI BOTTAI" oninput="filtraSuggerimenti(this, 'all')" onfocus="filtraSuggerimenti(this, 'all')">
+                    <div class="autocomplete-list"></div>
+                </div>
+                <button class="btn-genera" style="width: auto; margin-top: 0; margin-bottom: 0; padding: 0 20px; height: 50px;" onclick="controllaDatabase()">Cerca</button>
             </div>
             
             <div id="db_risultato" style="margin-top: 20px; display: none;">
@@ -491,8 +496,10 @@
             var boxAggiungi = document.getElementById('db_box_aggiungi');
             document.getElementById('db_risultato').style.display = 'block';
 
-            var trovatoInMaster = masterPromoterList.includes(nome) || masterLocaleList.includes(nome);
-            var trovatoInCustom = customPromoters.some(p => p.nome.toLowerCase() === nome.toLowerCase()) || customLocali.some(l => l.nome.toLowerCase() === nome.toLowerCase());
+            var trovatoInMaster = masterPromoterList.some(m => m.toLowerCase() === nome.toLowerCase()) || 
+                                  masterLocaleList.some(m => m.toLowerCase() === nome.toLowerCase());
+            var trovatoInCustom = customPromoters.some(p => p.nome.toLowerCase() === nome.toLowerCase()) || 
+                                  customLocali.some(l => l.nome.toLowerCase() === nome.toLowerCase());
 
             if(trovatoInMaster || trovatoInCustom) {
                 msg.innerText = "✅ '" + nome + "' è GIA' PRESENTE nel sistema.";
@@ -572,8 +579,15 @@
             var fullList = [];
             if (tipo === 'promoter') {
                 fullList = masterPromoterList.concat(customPromoters.map(p => p.nome));
-            } else {
+            } else if (tipo === 'locale') {
                 fullList = masterLocaleList.concat(customLocali.map(l => l.nome));
+            } else if (tipo === 'all') {
+                // Uniamo tutti i locali e tutti i promoter per la ricerca globale
+                fullList = masterPromoterList.concat(customPromoters.map(p => p.nome))
+                                             .concat(masterLocaleList)
+                                             .concat(customLocali.map(l => l.nome));
+                // Rimuove eventuali doppioni
+                fullList = [...new Set(fullList)];
             }
 
             listContainer.innerHTML = '';
@@ -604,14 +618,18 @@
                     var div = document.createElement('div');
                     div.className = 'autocomplete-item';
                     div.innerText = filtrati[x];
+                    
                     if(customPromoters.some(p=>p.nome === filtrati[x]) || customLocali.some(l=>l.nome === filtrati[x])) {
                         div.innerText += " ⭐";
                         div.style.color = "#fbbf24";
                     }
+                    
                     div.onmousedown = function(e) {
                         e.preventDefault(); 
                         inputEl.value = this.innerText.replace(" ⭐", "");
                         listContainer.style.display = 'none';
+                        // Rimuove l'avviso di ricerca se l'utente clicca una voce
+                        document.getElementById('db_risultato').style.display = 'none';
                     };
                     listContainer.appendChild(div);
                 }
@@ -814,7 +832,7 @@
         async function fermaSingoloBot(runId) {
             if(!GITHUB_TOKEN || !GITHUB_USER) return;
             vibraErrore();
-            var conferma = confirm("⚠️ Vuoi interrompere questo specifico server?");
+            var conferma = confirm("⚠️ Vuoi interromড়িয়ে questo specifico server?");
             if(!conferma) return;
 
             try {
