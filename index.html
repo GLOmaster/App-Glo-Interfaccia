@@ -5,6 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hub Automazioni GLO</title>
     
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Hub GLO">
+    
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -53,14 +57,12 @@
         .btn-sniper { background: rgba(220, 38, 38, 0.1); border: 1px solid #dc2626; color: #ef4444; padding: 6px 12px; font-size: 12px; width: auto; border-radius: 6px; margin-top: 0; }
         .btn-info { background: #0ea5e9; color: white; border: none; padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: bold; cursor: pointer; margin-left: 8px; text-transform: none; width: auto; display: inline-block; }
 
-        /* Menu a tendina custom */
         .autocomplete-container { position: relative; width: 100%; }
         .autocomplete-list { position: absolute; top: 100%; left: 0; right: 0; background: #0f172a; border: 1px solid #38bdf8; border-radius: 8px; margin-top: 4px; z-index: 1000; max-height: 220px; overflow-y: auto; display: none; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.5); }
         .autocomplete-item { padding: 12px 15px; color: #f1f5f9; font-size: 14px; border-bottom: 1px solid #1e293b; cursor: pointer; }
         .autocomplete-item:last-child { border-bottom: none; }
         .autocomplete-item:active { background: #1e293b; color: #38bdf8; }
 
-        /* Loader */
         #loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(5px); z-index: 9999; display: none; justify-content: center; align-items: center; flex-direction: column; }
         .loader-box { background: #1e293b; border: 1px solid #334155; padding: 30px; border-radius: 16px; text-align: center; width: 80%; max-width: 320px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.5); }
         .spinner { width: 45px; height: 45px; border: 4px solid #334155; border-top: 4px solid #38bdf8; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 20px auto; }
@@ -89,13 +91,16 @@
             <p class="status-title">📡 Stato di Rete</p>
             <p id="stato-connessione" class="status-value" style="color: #fbbf24;">In attesa di Sincronizzazione...</p>
         </div>
-        <div class="section" style="background: transparent; box-shadow: none; padding: 0; border: none;">
+        
+        <!-- BLOCCO COMANDI: INVISIBILE FINCHE' IL TOKEN NON E' VALIDO -->
+        <div id="blocco-comandi" class="section" style="background: transparent; box-shadow: none; padding: 0; border: none; display: none;">
             <button class="btn-menu btn-monitor" onclick="mostraSchermata('screen-monitor'); caricaMonitor();">🖥️ Monitor Sistema</button>
             <button class="btn-menu" onclick="mostraSchermata('screen-tableau')">📊 Avvia TABLEAU</button>
             <button class="btn-menu btn-rav" onclick="mostraSchermata('screen-rav')">📝 Avvia RAV</button>
             <button class="btn-menu btn-db" onclick="mostraSchermata('screen-db')">🗂️ Gestione Database</button>
         </div>
-        <button class="btn-reset" onclick="resetToken()">🔑 Cambia Token Sicurezza</button>
+        
+        <button class="btn-reset" onclick="resetToken()" style="margin-top: 10px;">🔑 Inserisci / Cambia Token</button>
     </div>
 
     <!-- GESTIONE DATABASE CON RICERCA INTELLIGENTE -->
@@ -469,13 +474,15 @@
 
             try {
                 if(!GITHUB_TOKEN) {
-                    var tokenInserito = prompt("Primo avvio: Inserisci il tuo Token GitHub.");
+                    var tokenInserito = prompt("Primo avvio: Inserisci il tuo Token GitHub per sbloccare l'app.");
                     if(tokenInserito) {
                         GITHUB_TOKEN = tokenInserito.trim();
                         localStorage.setItem('gh_token', GITHUB_TOKEN);
                     }
                 }
-                if(GITHUB_TOKEN) await verificaConnessione();
+                
+                // Chiama la verifica in ogni caso: se non c'è token, blocca subito l'interfaccia
+                await verificaConnessione();
 
                 var savedOp = localStorage.getItem('saved_operatore') || "";
                 if(savedOp) {
@@ -486,7 +493,6 @@
             } catch(e) {}
         };
 
-        // --- GESTIONE DATABASE CON RICERCA PIU' INTELLIGENTE ---
         function controllaDatabase() {
             var nomeInput = document.getElementById('db_cerca_nome').value.trim().toLowerCase();
             if(!nomeInput) return;
@@ -498,7 +504,6 @@
             var fullMaster = masterPromoterList.concat(masterLocaleList);
             var fullCustom = customPromoters.map(p => p.nome).concat(customLocali.map(l => l.nome));
 
-            // Controllo 1: Esatto (stessa parola)
             var esattoM = fullMaster.find(m => m.toLowerCase() === nomeInput);
             var esattoC = fullCustom.find(m => m.toLowerCase() === nomeInput);
 
@@ -511,7 +516,6 @@
                 return;
             }
 
-            // Controllo 2: Parziale (se scrivi "bottai" capisce "AI BOTTAI")
             var parzialiM = fullMaster.filter(m => m.toLowerCase().includes(nomeInput));
             var parzialiC = fullCustom.filter(m => m.toLowerCase().includes(nomeInput));
             
@@ -530,7 +534,6 @@
                 return;
             }
 
-            // Se fallisce (Nessun match o troppi match confusi)
             msg.innerText = "❌ Nessun match esatto per '" + document.getElementById('db_cerca_nome').value.trim() + "'.\nVuoi aggiungerlo alla memoria del telefono?";
             msg.style.color = "#ef4444";
             boxAggiungi.style.display = 'block';
@@ -579,7 +582,6 @@
             }
         }
 
-        // --- SISTEMA FUZZY ANTI-CRASH ---
         function calcolaDistanza(a, b) {
             if(a.length === 0) return b.length;
             if(b.length === 0) return a.length;
@@ -600,7 +602,6 @@
             var listContainer = inputEl.nextElementSibling; 
             if (!listContainer || !listContainer.classList.contains('autocomplete-list')) return;
 
-            // Metodo di unione liste ultra-compatibile (evita i crash su vecchi Android)
             var rawList = [];
             if (tipo === 'promoter') {
                 rawList = masterPromoterList.concat(customPromoters.map(p => p.nome));
@@ -612,7 +613,6 @@
                                             .concat(customLocali.map(l => l.nome));
             }
 
-            // Rimuoviamo i doppioni in modo sicuro
             var fullList = [];
             for(var k=0; k<rawList.length; k++) {
                 if(fullList.indexOf(rawList[k]) === -1) fullList.push(rawList[k]);
@@ -671,7 +671,6 @@
             }
         });
         
-        // --- FUNZIONI DI UTILITA E MEMORIA ---
         function vibraErrore() { try { if ("vibrate" in navigator) navigator.vibrate([200, 100, 200]); } catch(e) {} }
         
         function salvaOperatore(val) { 
@@ -702,7 +701,7 @@
             }
         }
 
-        function resetToken() {
+        async function resetToken() {
             var nuovoToken = prompt("Inserisci il nuovo Token GitHub:");
             if(nuovoToken) {
                 GITHUB_TOKEN = nuovoToken.trim();
@@ -710,23 +709,43 @@
                     localStorage.setItem('gh_token', GITHUB_TOKEN);
                     localStorage.removeItem('gh_user'); 
                 } catch(e) {}
-                verificaConnessione();
+                await verificaConnessione();
             }
         }
 
+        // --- SISTEMA DI BLOCCO / SBLOCCO SULLA BASE DEL TOKEN ---
         async function verificaConnessione() {
             var divStato = document.getElementById('stato-connessione');
+            var bloccoComandi = document.getElementById('blocco-comandi');
+            
+            if(!GITHUB_TOKEN) {
+                divStato.innerText = "❌ Accesso Negato (Nessun Token)"; 
+                divStato.style.color = "#ef4444"; 
+                bloccoComandi.style.display = "none";
+                return;
+            }
+
             try {
                 var userRes = await fetch("https://api.github.com/user", { headers: { 'Authorization': 'Bearer ' + GITHUB_TOKEN }});
-                if(!userRes.ok) { divStato.innerText = "❌ Token non valido."; divStato.style.color = "#ef4444"; return; }
+                if(!userRes.ok) { 
+                    divStato.innerText = "❌ Accesso Negato (Token errato o scaduto)"; 
+                    divStato.style.color = "#ef4444"; 
+                    bloccoComandi.style.display = "none"; // Nasconde i comandi
+                    return; 
+                }
                 var userData = await userRes.json();
                 GITHUB_USER = userData.login; 
                 try { localStorage.setItem('gh_user', GITHUB_USER); } catch(e){}
-                divStato.innerText = "✅ Connesso come: " + GITHUB_USER; divStato.style.color = "#10b981";
-            } catch(e) { divStato.innerText = "❌ Offline"; divStato.style.color = "#ef4444"; }
+                divStato.innerText = "✅ Connesso come: " + GITHUB_USER; 
+                divStato.style.color = "#10b981";
+                bloccoComandi.style.display = "block"; // Sblocca i comandi!
+            } catch(e) { 
+                divStato.innerText = "❌ Offline o Errore di Rete"; 
+                divStato.style.color = "#ef4444"; 
+                bloccoComandi.style.display = "none"; // Nasconde i comandi in caso di errore
+            }
         }
 
-        // --- SCHERMATE E INTERFACCIA ---
         function mostraSchermata(idSchermata) {
             var screens = document.querySelectorAll('.screen');
             for(var i=0; i<screens.length; i++) screens[i].classList.remove('active');
@@ -761,7 +780,6 @@
             }
         }
 
-        // --- SISTEMA MONITOR ---
         async function caricaMonitor() {
             if(!GITHUB_TOKEN || !GITHUB_USER) return;
             var container = document.getElementById('monitor-lista');
@@ -905,7 +923,6 @@
             } catch(e) { alert("Errore di connessione a GitHub."); }
         }
 
-        // --- MOTORI DI AVVIO E LOGICA DATI ---
         function avviaTableau() {
             var operatore = document.getElementById('tab_operatore').value.trim();
             var locale = document.getElementById('tab_locale').value.trim();
