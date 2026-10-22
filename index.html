@@ -104,7 +104,7 @@
         <button class="btn-reset" onclick="resetToken()" style="margin-top: 10px;">🔑 Inserisci / Cambia Token</button>
     </div>
 
-    <!-- GESTIONE DATABASE CON RICERCA INTELLIGENTE -->
+    <!-- GESTIONE DATABASE -->
     <div id="screen-db" class="screen">
         <button class="btn-back" onclick="mostraSchermata('screen-home')">⬅ Torna alla Home</button>
         <h2>Database Custom</h2>
@@ -139,6 +139,16 @@
     <div id="screen-monitor" class="screen">
         <button class="btn-back" onclick="mostraSchermata('screen-home')">⬅ Torna alla Home</button>
         <h2>Monitor di Sistema</h2>
+        
+        <!-- NUOVO BOX QUOTA MENSILE -->
+        <div class="section status-box" id="box-quota" style="display: none; padding: 20px; border-left: 4px solid #38bdf8;">
+            <p class="status-title">⏳ Quota Mensile GitHub</p>
+            <p id="quota-valore" class="status-value" style="color: #f1f5f9; font-size: 15px; font-weight: 500;">Calcolo in corso...</p>
+            <div id="quota-barra-container" style="background: #334155; border-radius: 8px; height: 12px; margin-top: 12px; overflow: hidden;">
+                <div id="quota-barra" style="background: #10b981; height: 100%; width: 0%; transition: width 0.8s ease-in-out;"></div>
+            </div>
+        </div>
+
         <div class="section">
             <div style="display: flex; gap: 10px; margin-bottom: 15px;">
                 <button class="btn-genera btn-half" onclick="caricaMonitor()">🔄 Aggiorna</button>
@@ -481,8 +491,6 @@
                         localStorage.setItem('gh_token', GITHUB_TOKEN);
                     }
                 }
-                
-                // Chiama la verifica in ogni caso: se non c'è token, blocca subito l'interfaccia
                 await verificaConnessione();
 
                 var savedOp = localStorage.getItem('saved_operatore') || "";
@@ -497,7 +505,6 @@
         function controllaDatabase() {
             var nomeInput = document.getElementById('db_cerca_nome').value.trim().toLowerCase();
             if(!nomeInput) return;
-            
             var msg = document.getElementById('db_messaggio');
             var boxAggiungi = document.getElementById('db_box_aggiungi');
             document.getElementById('db_risultato').style.display = 'block';
@@ -576,11 +583,8 @@
             var endCount = customPromoters.length + customLocali.length;
             var rimossi = startCount - endCount;
 
-            if(rimossi > 0) {
-                alert("🧹 Pulizia completata!\nSono stati rimossi " + rimossi + " elementi che ormai erano stati inseriti nel codice sorgente ufficiale.");
-            } else {
-                alert("👍 Tutto aggiornato.\nI nomi salvati manualmente non sono ancora stati inseriti nel codice sorgente, quindi li mantengo in memoria per farti lavorare.");
-            }
+            if(rimossi > 0) alert("🧹 Pulizia completata!\nSono stati rimossi " + rimossi + " elementi che ormai erano stati inseriti nel codice sorgente ufficiale.");
+            else alert("👍 Tutto aggiornato.\nI nomi salvati manualmente non sono ancora stati inseriti nel codice sorgente.");
         }
 
         function calcolaDistanza(a, b) {
@@ -604,25 +608,17 @@
             if (!listContainer || !listContainer.classList.contains('autocomplete-list')) return;
 
             var rawList = [];
-            if (tipo === 'promoter') {
-                rawList = masterPromoterList.concat(customPromoters.map(p => p.nome));
-            } else if (tipo === 'locale') {
-                rawList = masterLocaleList.concat(customLocali.map(l => l.nome));
-            } else if (tipo === 'all') {
-                rawList = masterPromoterList.concat(customPromoters.map(p => p.nome))
-                                            .concat(masterLocaleList)
-                                            .concat(customLocali.map(l => l.nome));
-            }
+            if (tipo === 'promoter') rawList = masterPromoterList.concat(customPromoters.map(p => p.nome));
+            else if (tipo === 'locale') rawList = masterLocaleList.concat(customLocali.map(l => l.nome));
+            else if (tipo === 'all') rawList = masterPromoterList.concat(customPromoters.map(p => p.nome)).concat(masterLocaleList).concat(customLocali.map(l => l.nome));
 
             var fullList = [];
-            for(var k=0; k<rawList.length; k++) {
-                if(fullList.indexOf(rawList[k]) === -1) fullList.push(rawList[k]);
-            }
+            for(var k=0; k<rawList.length; k++) if(fullList.indexOf(rawList[k]) === -1) fullList.push(rawList[k]);
 
             listContainer.innerHTML = '';
             var filtrati = [];
 
-            if (val.length === 0) { filtrati = fullList; } 
+            if (val.length === 0) filtrati = fullList; 
             else {
                 for(var i=0; i<fullList.length; i++) {
                     var nome = fullList[i].toLowerCase();
@@ -647,12 +643,10 @@
                     var div = document.createElement('div');
                     div.className = 'autocomplete-item';
                     div.innerText = filtrati[x];
-                    
                     if(customPromoters.some(p=>p.nome === filtrati[x]) || customLocali.some(l=>l.nome === filtrati[x])) {
                         div.innerText += " ⭐";
                         div.style.color = "#fbbf24";
                     }
-                    
                     div.onmousedown = function(e) {
                         e.preventDefault(); 
                         inputEl.value = this.innerText.replace(" ⭐", "");
@@ -673,78 +667,38 @@
         });
         
         function vibraErrore() { try { if ("vibrate" in navigator) navigator.vibrate([200, 100, 200]); } catch(e) {} }
+        function salvaOperatore(val) { try { localStorage.setItem('saved_operatore', val); document.getElementById('tab_operatore').value = val; document.getElementById('rav_operatore').value = val; } catch(e) {} }
+        function salvaInCronologiaLocale(nomeBot, dati) { try { var cronologia = JSON.parse(localStorage.getItem('hub_cronologia') || '[]'); cronologia.push({ time: new Date().getTime(), bot: nomeBot, dati: dati }); localStorage.setItem('hub_cronologia', JSON.stringify(cronologia)); } catch(e) {} }
         
-        function salvaOperatore(val) { 
-            try { 
-                localStorage.setItem('saved_operatore', val); 
-                document.getElementById('tab_operatore').value = val; 
-                document.getElementById('rav_operatore').value = val; 
-            } catch(e) {} 
-        }
-
-        function salvaInCronologiaLocale(nomeBot, dati) {
-            try {
-                var cronologia = JSON.parse(localStorage.getItem('hub_cronologia') || '[]');
-                cronologia.push({ time: new Date().getTime(), bot: nomeBot, dati: dati });
-                localStorage.setItem('hub_cronologia', JSON.stringify(cronologia));
-            } catch(e) {}
-        }
-
         function svuotaMemoria() {
-            var conferma = confirm("🗑️ Vuoi cancellare definitivamente tutta la memoria della CRONOLOGIA INFO sul tuo telefono?\n\nI promoter o i locali aggiunti nel Database non verranno toccati.");
-            if(conferma) {
-                try {
-                    localStorage.removeItem('hub_cronologia');
-                    alert("✅ Cronologia locale svuotata con successo!");
-                } catch(e) {
-                    alert("Errore di memoria.");
-                }
-            }
+            var conferma = confirm("🗑️ Vuoi cancellare la CRONOLOGIA INFO locale?\nI promoter o i locali aggiunti nel Database non verranno toccati.");
+            if(conferma) { try { localStorage.removeItem('hub_cronologia'); alert("✅ Cronologia svuotata!"); } catch(e) {} }
         }
 
         async function resetToken() {
             var nuovoToken = prompt("Inserisci il nuovo Token GitHub:");
             if(nuovoToken) {
                 GITHUB_TOKEN = nuovoToken.trim();
-                try {
-                    localStorage.setItem('gh_token', GITHUB_TOKEN);
-                    localStorage.removeItem('gh_user'); 
-                } catch(e) {}
+                try { localStorage.setItem('gh_token', GITHUB_TOKEN); localStorage.removeItem('gh_user'); } catch(e) {}
                 await verificaConnessione();
             }
         }
 
-        // --- SISTEMA DI BLOCCO / SBLOCCO SULLA BASE DEL TOKEN ---
         async function verificaConnessione() {
             var divStato = document.getElementById('stato-connessione');
             var bloccoComandi = document.getElementById('blocco-comandi');
-            
             if(!GITHUB_TOKEN) {
-                divStato.innerText = "❌ Accesso Negato (Nessun Token)"; 
-                divStato.style.color = "#ef4444"; 
-                bloccoComandi.style.display = "none";
-                return;
+                divStato.innerText = "❌ Accesso Negato (Nessun Token)"; divStato.style.color = "#ef4444"; bloccoComandi.style.display = "none"; return;
             }
-
             try {
                 var userRes = await fetch("https://api.github.com/user", { headers: { 'Authorization': 'Bearer ' + GITHUB_TOKEN }});
-                if(!userRes.ok) { 
-                    divStato.innerText = "❌ Accesso Negato (Token errato o scaduto)"; 
-                    divStato.style.color = "#ef4444"; 
-                    bloccoComandi.style.display = "none"; // Nasconde i comandi
-                    return; 
-                }
+                if(!userRes.ok) { divStato.innerText = "❌ Accesso Negato (Token errato)"; divStato.style.color = "#ef4444"; bloccoComandi.style.display = "none"; return; }
                 var userData = await userRes.json();
                 GITHUB_USER = userData.login; 
                 try { localStorage.setItem('gh_user', GITHUB_USER); } catch(e){}
-                divStato.innerText = "✅ Connesso come: " + GITHUB_USER; 
-                divStato.style.color = "#10b981";
-                bloccoComandi.style.display = "block"; // Sblocca i comandi!
-            } catch(e) { 
-                divStato.innerText = "❌ Offline o Errore di Rete"; 
-                divStato.style.color = "#ef4444"; 
-                bloccoComandi.style.display = "none"; // Nasconde i comandi in caso di errore
-            }
+                divStato.innerText = "✅ Connesso come: " + GITHUB_USER; divStato.style.color = "#10b981";
+                bloccoComandi.style.display = "block"; 
+            } catch(e) { divStato.innerText = "❌ Errore di Rete"; divStato.style.color = "#ef4444"; bloccoComandi.style.display = "none"; }
         }
 
         function mostraSchermata(idSchermata) {
@@ -753,51 +707,58 @@
             document.getElementById(idSchermata).classList.add('active'); window.scrollTo(0,0);
         }
 
-        function gestisciVeloTutti() {
-            if (document.getElementById('tab_velo_tutti').checked) {
-                var cbs = document.querySelectorAll('.tab_velo_opt');
-                for(var i=0; i<cbs.length; i++) cbs[i].checked = false;
-            }
-        }
-        function gestisciVeloSingoli() {
-            var scelti = document.querySelectorAll('.tab_velo_opt:checked').length;
-            if (scelti > 0) document.getElementById('tab_velo_tutti').checked = false;
-            else document.getElementById('tab_velo_tutti').checked = true;
-        }
-        function ottieniStringaVelo() {
-            if (document.getElementById('tab_velo_tutti').checked) return "tutti";
-            var arrayScelti = [];
-            var cbs = document.querySelectorAll('.tab_velo_opt:checked');
-            for(var i=0; i<cbs.length; i++) arrayScelti.push(cbs[i].value);
-            return arrayScelti.join(",");
-        }
-        function gestisciMostraGifting() {
-            var selezione = document.getElementById('tab_tipo_gifting').value;
-            var sezioneNum = document.getElementById('tab_sezione_num_gifting');
-            if (selezione === "purple_grape") sezioneNum.style.display = "block";
-            else {
-                sezioneNum.style.display = "none";
-                document.getElementById('tab_cicli_gifting').value = "0";
-            }
-        }
+        function gestisciVeloTutti() { if (document.getElementById('tab_velo_tutti').checked) { var cbs = document.querySelectorAll('.tab_velo_opt'); for(var i=0; i<cbs.length; i++) cbs[i].checked = false; } }
+        function gestisciVeloSingoli() { var scelti = document.querySelectorAll('.tab_velo_opt:checked').length; if (scelti > 0) document.getElementById('tab_velo_tutti').checked = false; else document.getElementById('tab_velo_tutti').checked = true; }
+        function ottieniStringaVelo() { if (document.getElementById('tab_velo_tutti').checked) return "tutti"; var arrayScelti = []; var cbs = document.querySelectorAll('.tab_velo_opt:checked'); for(var i=0; i<cbs.length; i++) arrayScelti.push(cbs[i].value); return arrayScelti.join(","); }
+        function gestisciMostraGifting() { var selezione = document.getElementById('tab_tipo_gifting').value; var sezioneNum = document.getElementById('tab_sezione_num_gifting'); if (selezione === "purple_grape") sezioneNum.style.display = "block"; else { sezioneNum.style.display = "none"; document.getElementById('tab_cicli_gifting').value = "0"; } }
 
+        // --- MOTORE MONITOR CON QUOTA MENSILE E TEMPO DI ESECUZIONE ---
         async function caricaMonitor() {
             if(!GITHUB_TOKEN || !GITHUB_USER) return;
             var container = document.getElementById('monitor-lista');
             container.innerHTML = '<p style="text-align:center; color:#38bdf8; font-size:14px;">📡 Contattando il server...</p>';
             
+            // 1. CARICAMENTO QUOTA MENSILE (API BILLING)
             try {
-                var url = "https://api.github.com/repos/" + GITHUB_USER + "/" + GITHUB_REPO + "/actions/runs?per_page=12";
-                var res = await fetch(url, { headers: { 'Authorization': 'Bearer ' + GITHUB_TOKEN } });
+                var urlBilling = "https://api.github.com/users/" + GITHUB_USER + "/settings/billing/actions";
+                var resBill = await fetch(urlBilling, { headers: { 'Authorization': 'Bearer ' + GITHUB_TOKEN } });
                 
-                if(res.ok) {
-                    var data = await res.json();
+                var divQuota = document.getElementById('box-quota');
+                var txtQuota = document.getElementById('quota-valore');
+                var barQuota = document.getElementById('quota-barra');
+                
+                divQuota.style.display = 'block';
+
+                if(resBill.ok) {
+                    var dataBill = await resBill.json();
+                    var usati = Math.round(dataBill.total_minutes_used);
+                    var inclusi = dataBill.included_minutes || 2000;
+                    var rimanenti = inclusi - usati;
+                    var perc = Math.min(100, (usati / inclusi) * 100);
+
+                    txtQuota.innerHTML = "Consumati <b>" + usati + " min</b> su " + inclusi + "<br><span style='font-size: 13px; color: #94a3b8;'>Restano: <strong style='color: " + (rimanenti < 200 ? "#ef4444" : "#10b981") + ";'>" + rimanenti + " min</strong> per questo mese.</span>";
+                    document.getElementById('quota-barra-container').style.display = 'block';
+                    barQuota.style.width = perc + "%";
+                    
+                    if(rimanenti < 200) barQuota.style.background = "#ef4444"; 
+                    else if(rimanenti < 500) barQuota.style.background = "#f59e0b"; 
+                    else barQuota.style.background = "#10b981"; 
+                } else {
+                    txtQuota.innerHTML = "<span style='font-size: 13px; color: #94a3b8;'><i>Dato non disponibile.<br>(La tua repo è Pubblica o il Token non ha i permessi 'read:user' per leggere la fatturazione).</i></span>";
+                    document.getElementById('quota-barra-container').style.display = 'none';
+                }
+            } catch(e) { }
+
+            // 2. CARICAMENTO PROCESSI IN ESECUZIONE (RUNS)
+            try {
+                var urlRuns = "https://api.github.com/repos/" + GITHUB_USER + "/" + GITHUB_REPO + "/actions/runs?per_page=12";
+                var resRuns = await fetch(urlRuns, { headers: { 'Authorization': 'Bearer ' + GITHUB_TOKEN } });
+                
+                if(resRuns.ok) {
+                    var data = await resRuns.json();
                     var runs = data.workflow_runs;
                     
-                    if(runs.length === 0) {
-                        container.innerHTML = '<p style="text-align:center; color:#cbd5e1; font-size:14px;">Nessun bot avviato di recente.</p>';
-                        return;
-                    }
+                    if(runs.length === 0) { container.innerHTML = '<p style="text-align:center; color:#cbd5e1; font-size:14px;">Nessun bot avviato di recente.</p>'; return; }
                     
                     var html = '';
                     for(var i=0; i<runs.length; i++) {
@@ -806,7 +767,20 @@
                         var colore = '#fbbf24'; 
                         var statoTxt = 'In Coda';
                         var btnSniper = '';
+                        var durationStr = '';
                         
+                        // Calcolo Timer
+                        if (run.status === 'completed') {
+                            var start = new Date(run.run_started_at || run.created_at).getTime();
+                            var end = new Date(run.updated_at).getTime();
+                            var diffSec = Math.floor((end - start) / 1000);
+                            var dMin = Math.floor(diffSec / 60);
+                            var dSec = diffSec % 60;
+                            durationStr = '⏱️ ' + dMin + 'm ' + dSec + 's';
+                        } else if (run.status === 'in_progress' || run.status === 'queued') {
+                            durationStr = '⏱️ In corso...';
+                        }
+
                         if(run.status === 'in_progress' || run.status === 'queued') { 
                             if(run.status === 'in_progress') { icona = '🔄'; colore = '#38bdf8'; statoTxt = 'In Esecuzione'; }
                             btnSniper = '<button class="btn-sniper" onclick="fermaSingoloBot(' + run.id + ')">🛑 STOP</button>';
@@ -826,8 +800,9 @@
                                 '<strong style="color: #f8fafc; font-size: 15px;">' + run.name + btnInfo + '</strong>' +
                                 '<span style="font-size: 12px; color: #cbd5e1;">' + nomeData + '</span>' +
                             '</div>' +
-                            '<div style="font-size: 13px; color: #94a3b8; margin-top: 4px;">' +
-                                '👤 Operatore: <strong style="color: #cbd5e1;">' + operatoreTesto + '</strong>' +
+                            '<div style="font-size: 13px; color: #94a3b8; margin-top: 6px; display: flex; justify-content: space-between; align-items: center;">' +
+                                '<span>👤 Op: <strong style="color: #cbd5e1;">' + operatoreTesto + '</strong></span>' +
+                                '<span style="color: #fbbf24; font-weight: 600;">' + durationStr + '</span>' +
                             '</div>' +
                             '<div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">' +
                                 '<div style="font-size: 14px; font-weight: 600; color: ' + colore + ';">' + icona + ' ' + statoTxt + '</div>' +
@@ -836,43 +811,25 @@
                         '</div>';
                     }
                     container.innerHTML = html;
-                } else {
-                    container.innerHTML = '<p style="text-align:center; color:#ef4444; font-size:14px;">Errore API nel caricamento.</p>';
-                }
-            } catch(e) {
-                container.innerHTML = '<p style="text-align:center; color:#ef4444; font-size:14px;">Errore di rete.</p>';
-            }
+                } else container.innerHTML = '<p style="text-align:center; color:#ef4444; font-size:14px;">Errore API nel caricamento dei processi.</p>';
+            } catch(e) { container.innerHTML = '<p style="text-align:center; color:#ef4444; font-size:14px;">Errore di rete.</p>'; }
         }
 
         function mostraDettagli(runTimeStr) {
             try {
                 var runTime = new Date(runTimeStr).getTime();
                 var cronologia = JSON.parse(localStorage.getItem('hub_cronologia') || '[]');
-                var trovati = cronologia.filter(function(item) {
-                    return Math.abs(item.time - runTime) < (3 * 60000); 
-                });
-
-                if(trovati.length === 0) {
-                    alert("📄 Dettagli non trovati nel tuo telefono.");
-                    return;
-                }
-
+                var trovati = cronologia.filter(function(item) { return Math.abs(item.time - runTime) < (3 * 60000); });
+                if(trovati.length === 0) { alert("📄 Dettagli non trovati nel tuo telefono."); return; }
                 var msg = "📊 DETTAGLI REGISTRATI SUL TELEFONO:\n---------------------------------------\n";
                 for(var i=0; i<trovati.length; i++) {
                     var d = trovati[i].dati;
-                    if(d.locale) {
-                        msg += "📍 Locale: " + d.locale + "\n";
-                        msg += "🔄 GLO: " + d.cicli + " | VELO: " + d.cicli_velo + " | VUSE: " + d.cicli_vuse + "\n";
-                    } else {
-                        msg += "🧑‍💼 Promoter: " + d.promoter + "\n";
-                        msg += "🔄 GLO: " + d.n_glo + " | VELO: " + d.n_velo + " | VUSE: " + d.n_vuse + "\n";
-                    }
+                    if(d.locale) { msg += "📍 Locale: " + d.locale + "\n🔄 GLO: " + d.cicli + " | VELO: " + d.cicli_velo + " | VUSE: " + d.cicli_vuse + "\n"; } 
+                    else { msg += "🧑‍💼 Promoter: " + d.promoter + "\n🔄 GLO: " + d.n_glo + " | VELO: " + d.n_velo + " | VUSE: " + d.n_vuse + "\n"; }
                     msg += "---------------------------------------\n";
                 }
                 alert(msg);
-            } catch(e) {
-                alert("Errore nella lettura dei dettagli.");
-            }
+            } catch(e) { alert("Errore nella lettura dei dettagli."); }
         }
 
         async function fermaSingoloBot(runId) {
@@ -880,24 +837,19 @@
             vibraErrore();
             var conferma = confirm("⚠️ Vuoi interrompere questo specifico server?");
             if(!conferma) return;
-
             try {
                 var cancelUrl = "https://api.github.com/repos/" + GITHUB_USER + "/" + GITHUB_REPO + "/actions/runs/" + runId + "/cancel";
                 var res = await fetch(cancelUrl, { method: 'POST', headers: { 'Authorization': 'Bearer ' + GITHUB_TOKEN }});
-                if(res.ok) {
-                    alert("🛑 Server fermato con successo.");
-                    caricaMonitor(); 
-                } else { alert("Errore nell'arrestare il processo."); }
+                if(res.ok) { alert("🛑 Server fermato con successo."); caricaMonitor(); } 
+                else { alert("Errore nell'arrestare il processo."); }
             } catch(e) { alert("Errore di connessione a GitHub."); }
         }
 
         async function fermaBot(workflowFile, nomeBot) {
             if(!GITHUB_TOKEN || !GITHUB_USER) { alert("Manca Token/Utente."); return; }
-
             vibraErrore();
             var conferma = confirm("⚠️ Sicuro di voler ARRESTARE tutti i server generali di " + nomeBot + "?");
             if(!conferma) return;
-
             var urlRuns = "https://api.github.com/repos/" + GITHUB_USER + "/" + GITHUB_REPO + "/actions/workflows/" + workflowFile + "/runs?per_page=10";
             try {
                 var res = await fetch(urlRuns, { headers: { 'Authorization': 'Bearer ' + GITHUB_TOKEN }});
@@ -905,21 +857,16 @@
                     var data = await res.json();
                     var activeRuns = [];
                     for(var i=0; i<data.workflow_runs.length; i++) {
-                        if(data.workflow_runs[i].status === 'in_progress' || data.workflow_runs[i].status === 'queued') {
-                            activeRuns.push(data.workflow_runs[i]);
-                        }
+                        if(data.workflow_runs[i].status === 'in_progress' || data.workflow_runs[i].status === 'queued') activeRuns.push(data.workflow_runs[i]);
                     }
-
                     if(activeRuns.length === 0) { alert("Nessun processo attivo per " + nomeBot + "."); return; }
-
                     var stoppedCount = 0;
                     for(var j=0; j<activeRuns.length; j++) {
                         var cancelUrl = "https://api.github.com/repos/" + GITHUB_USER + "/" + GITHUB_REPO + "/actions/runs/" + activeRuns[j].id + "/cancel";
                         var cancelRes = await fetch(cancelUrl, { method: 'POST', headers: { 'Authorization': 'Bearer ' + GITHUB_TOKEN }});
                         if(cancelRes.ok) stoppedCount++;
                     }
-                    if(stoppedCount > 0) alert("🛑 " + stoppedCount + " server fermati.");
-                    else alert("Errore nell'arrestare i processi.");
+                    if(stoppedCount > 0) alert("🛑 " + stoppedCount + " server fermati."); else alert("Errore nell'arrestare i processi.");
                 } else alert("Errore API.");
             } catch(e) { alert("Errore di connessione a GitHub."); }
         }
@@ -934,17 +881,10 @@
             var nVuse = document.getElementById('tab_cicli_vuse').value || "0";
             var nGift = document.getElementById('tab_cicli_gifting').value || "0";
 
-            var dati = {
-                operatore: operatore, locale: locale,
-                menu: document.getElementById('tab_menu').value,
-                cicli: nGlo, cicli_velo: nVelo, prodotti_velo: ottieniStringaVelo(), cicli_vuse: nVuse, cicli_gifting: nGift
-            };
+            var dati = { operatore: operatore, locale: locale, menu: document.getElementById('tab_menu').value, cicli: nGlo, cicli_velo: nVelo, prodotti_velo: ottieniStringaVelo(), cicli_vuse: nVuse, cicli_gifting: nGift };
 
             var objLocaleCustom = customLocali.find(l => l.nome.toLowerCase() === locale.toLowerCase());
-            if(objLocaleCustom) {
-                dati.custom_id = objLocaleCustom.id;
-                dati.custom_pwd = objLocaleCustom.pwd;
-            }
+            if(objLocaleCustom) { dati.custom_id = objLocaleCustom.id; dati.custom_pwd = objLocaleCustom.pwd; }
 
             var orario = document.getElementById('tab_ora_avvio').value;
             gestisciTimer([dati], orario, 'bot.yml', 'Tableau');
@@ -978,12 +918,7 @@
                 var promoter = document.getElementById('rav_promoter_' + i).value.trim();
                 if(!promoter) { vibraErrore(); alert("Manca un Promoter!"); return; }
 
-                var pData = {
-                    operatore: operatore, promoter: promoter,
-                    n_glo: document.getElementById('rav_n_glo_' + i).value || "0",
-                    n_velo: document.getElementById('rav_n_velo_' + i).value || "0",
-                    n_vuse: document.getElementById('rav_n_vuse_' + i).value || "0"
-                };
+                var pData = { operatore: operatore, promoter: promoter, n_glo: document.getElementById('rav_n_glo_' + i).value || "0", n_velo: document.getElementById('rav_n_velo_' + i).value || "0", n_vuse: document.getElementById('rav_n_vuse_' + i).value || "0" };
 
                 var objPromCustom = customPromoters.find(p => p.nome.toLowerCase() === promoter.toLowerCase());
                 if(objPromCustom) { pData.custom_link = objPromCustom.link; }
