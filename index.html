@@ -104,7 +104,7 @@
         <button class="btn-reset" onclick="resetToken()" style="margin-top: 10px;">🔑 Inserisci / Cambia Token</button>
     </div>
 
-    <!-- GESTIONE DATABASE -->
+    <!-- GESTIONE DATABASE CON RICERCA INTELLIGENTE -->
     <div id="screen-db" class="screen">
         <button class="btn-back" onclick="mostraSchermata('screen-home')">⬅ Torna alla Home</button>
         <h2>Database Custom</h2>
@@ -139,7 +139,6 @@
     <div id="screen-monitor" class="screen">
         <button class="btn-back" onclick="mostraSchermata('screen-home')">⬅ Torna alla Home</button>
         <h2>Monitor di Sistema</h2>
-
         <div class="section">
             <div style="display: flex; gap: 10px; margin-bottom: 15px;">
                 <button class="btn-genera btn-half" onclick="caricaMonitor()">🔄 Aggiorna</button>
@@ -482,6 +481,7 @@
                         localStorage.setItem('gh_token', GITHUB_TOKEN);
                     }
                 }
+                
                 await verificaConnessione();
 
                 var savedOp = localStorage.getItem('saved_operatore') || "";
@@ -496,6 +496,7 @@
         function controllaDatabase() {
             var nomeInput = document.getElementById('db_cerca_nome').value.trim().toLowerCase();
             if(!nomeInput) return;
+            
             var msg = document.getElementById('db_messaggio');
             var boxAggiungi = document.getElementById('db_box_aggiungi');
             document.getElementById('db_risultato').style.display = 'block';
@@ -574,8 +575,11 @@
             var endCount = customPromoters.length + customLocali.length;
             var rimossi = startCount - endCount;
 
-            if(rimossi > 0) alert("🧹 Pulizia completata!\nSono stati rimossi " + rimossi + " elementi che ormai erano stati inseriti nel codice sorgente ufficiale.");
-            else alert("👍 Tutto aggiornato.\nI nomi salvati manualmente non sono ancora stati inseriti nel codice sorgente.");
+            if(rimossi > 0) {
+                alert("🧹 Pulizia completata!\nSono stati rimossi " + rimossi + " elementi che ormai erano stati inseriti nel codice sorgente ufficiale.");
+            } else {
+                alert("👍 Tutto aggiornato.\nI nomi salvati manualmente non sono ancora stati inseriti nel codice sorgente.");
+            }
         }
 
         function calcolaDistanza(a, b) {
@@ -604,12 +608,14 @@
             else if (tipo === 'all') rawList = masterPromoterList.concat(customPromoters.map(p => p.nome)).concat(masterLocaleList).concat(customLocali.map(l => l.nome));
 
             var fullList = [];
-            for(var k=0; k<rawList.length; k++) if(fullList.indexOf(rawList[k]) === -1) fullList.push(rawList[k]);
+            for(var k=0; k<rawList.length; k++) {
+                if(fullList.indexOf(rawList[k]) === -1) fullList.push(rawList[k]);
+            }
 
             listContainer.innerHTML = '';
             var filtrati = [];
 
-            if (val.length === 0) filtrati = fullList; 
+            if (val.length === 0) { filtrati = fullList; } 
             else {
                 for(var i=0; i<fullList.length; i++) {
                     var nome = fullList[i].toLowerCase();
@@ -634,10 +640,12 @@
                     var div = document.createElement('div');
                     div.className = 'autocomplete-item';
                     div.innerText = filtrati[x];
+                    
                     if(customPromoters.some(p=>p.nome === filtrati[x]) || customLocali.some(l=>l.nome === filtrati[x])) {
                         div.innerText += " ⭐";
                         div.style.color = "#fbbf24";
                     }
+                    
                     div.onmousedown = function(e) {
                         e.preventDefault(); 
                         inputEl.value = this.innerText.replace(" ⭐", "");
@@ -658,38 +666,94 @@
         });
         
         function vibraErrore() { try { if ("vibrate" in navigator) navigator.vibrate([200, 100, 200]); } catch(e) {} }
-        function salvaOperatore(val) { try { localStorage.setItem('saved_operatore', val); document.getElementById('tab_operatore').value = val; document.getElementById('rav_operatore').value = val; } catch(e) {} }
-        function salvaInCronologiaLocale(nomeBot, dati) { try { var cronologia = JSON.parse(localStorage.getItem('hub_cronologia') || '[]'); cronologia.push({ time: new Date().getTime(), bot: nomeBot, dati: dati }); localStorage.setItem('hub_cronologia', JSON.stringify(cronologia)); } catch(e) {} }
         
+        function salvaOperatore(val) { 
+            try { 
+                localStorage.setItem('saved_operatore', val); 
+                document.getElementById('tab_operatore').value = val; 
+                document.getElementById('rav_operatore').value = val; 
+            } catch(e) {} 
+        }
+
+        function salvaInCronologiaLocale(nomeBot, dati) {
+            try {
+                var cronologia = JSON.parse(localStorage.getItem('hub_cronologia') || '[]');
+                cronologia.push({ time: new Date().getTime(), bot: nomeBot, dati: dati });
+                localStorage.setItem('hub_cronologia', JSON.stringify(cronologia));
+            } catch(e) {}
+        }
+
         function svuotaMemoria() {
-            var conferma = confirm("🗑️ Vuoi cancellare la CRONOLOGIA INFO locale?\nI promoter o i locali aggiunti nel Database non verranno toccati.");
-            if(conferma) { try { localStorage.removeItem('hub_cronologia'); alert("✅ Cronologia svuotata!"); } catch(e) {} }
+            var conferma = confirm("🗑️ Vuoi cancellare definitivamente tutta la memoria della CRONOLOGIA INFO sul tuo telefono?\n\nI promoter o i locali aggiunti nel Database non verranno toccati.");
+            if(conferma) {
+                try {
+                    localStorage.removeItem('hub_cronologia');
+                    alert("✅ Cronologia locale svuotata con successo!");
+                } catch(e) { alert("Errore di memoria."); }
+            }
         }
 
         async function resetToken() {
             var nuovoToken = prompt("Inserisci il nuovo Token GitHub:");
             if(nuovoToken) {
-                GITHUB_TOKEN = nuovoToken.trim();
-                try { localStorage.setItem('gh_token', GITHUB_TOKEN); localStorage.removeItem('gh_user'); } catch(e) {}
-                await verificaConnessione();
+                nuovoToken = nuovoToken.trim();
+                
+                // Controlla se il token è identico a quello già in uso
+                if (nuovoToken === GITHUB_TOKEN) {
+                    alert("ℹ️ Il token che hai inserito è già attualmente in uso.");
+                    return;
+                }
+
+                // Salva temporaneamente il vecchio token in caso di errore
+                var tokenPrecedente = GITHUB_TOKEN; 
+                GITHUB_TOKEN = nuovoToken;
+                
+                // Mostra la schermata di caricamento
+                document.getElementById('loading-overlay').style.display = 'flex';
+                
+                // Esegue la chiamata per verificare il nuovo token
+                var successo = await verificaConnessione();
+                
+                // Nasconde il caricamento
+                document.getElementById('loading-overlay').style.display = 'none';
+                
+                // Gestisce il risultato
+                if(successo) {
+                    try { localStorage.setItem('gh_token', GITHUB_TOKEN); localStorage.removeItem('gh_user'); } catch(e) {}
+                    alert("✅ Token verificato e salvato con successo!\nBenvenuto " + GITHUB_USER);
+                } else {
+                    // Ripristina il vecchio token se la verifica fallisce
+                    GITHUB_TOKEN = tokenPrecedente;
+                    await verificaConnessione(); // Ripristina l'interfaccia con il token vecchio
+                    alert("❌ Token non valido o errato.\nAssicurati di averlo copiato per intero e di non aver inserito spazi extra.");
+                }
             }
         }
 
         async function verificaConnessione() {
             var divStato = document.getElementById('stato-connessione');
             var bloccoComandi = document.getElementById('blocco-comandi');
+            
             if(!GITHUB_TOKEN) {
-                divStato.innerText = "❌ Accesso Negato (Nessun Token)"; divStato.style.color = "#ef4444"; bloccoComandi.style.display = "none"; return;
+                divStato.innerText = "❌ Accesso Negato (Nessun Token)"; divStato.style.color = "#ef4444"; bloccoComandi.style.display = "none"; 
+                return false;
             }
             try {
                 var userRes = await fetch("https://api.github.com/user", { headers: { 'Authorization': 'Bearer ' + GITHUB_TOKEN }});
-                if(!userRes.ok) { divStato.innerText = "❌ Accesso Negato (Token errato)"; divStato.style.color = "#ef4444"; bloccoComandi.style.display = "none"; return; }
+                if(!userRes.ok) { 
+                    divStato.innerText = "❌ Accesso Negato (Token errato)"; divStato.style.color = "#ef4444"; bloccoComandi.style.display = "none"; 
+                    return false; 
+                }
                 var userData = await userRes.json();
                 GITHUB_USER = userData.login; 
                 try { localStorage.setItem('gh_user', GITHUB_USER); } catch(e){}
                 divStato.innerText = "✅ Connesso come: " + GITHUB_USER; divStato.style.color = "#10b981";
                 bloccoComandi.style.display = "block"; 
-            } catch(e) { divStato.innerText = "❌ Errore di Rete"; divStato.style.color = "#ef4444"; bloccoComandi.style.display = "none"; }
+                return true; 
+            } catch(e) { 
+                divStato.innerText = "❌ Errore di Rete"; divStato.style.color = "#ef4444"; bloccoComandi.style.display = "none"; 
+                return false; 
+            }
         }
 
         function mostraSchermata(idSchermata) {
@@ -703,44 +767,11 @@
         function ottieniStringaVelo() { if (document.getElementById('tab_velo_tutti').checked) return "tutti"; var arrayScelti = []; var cbs = document.querySelectorAll('.tab_velo_opt:checked'); for(var i=0; i<cbs.length; i++) arrayScelti.push(cbs[i].value); return arrayScelti.join(","); }
         function gestisciMostraGifting() { var selezione = document.getElementById('tab_tipo_gifting').value; var sezioneNum = document.getElementById('tab_sezione_num_gifting'); if (selezione === "purple_grape") sezioneNum.style.display = "block"; else { sezioneNum.style.display = "none"; document.getElementById('tab_cicli_gifting').value = "0"; } }
 
-        // --- MOTORE MONITOR CON QUOTA MENSILE E TEMPO DI ESECUZIONE ---
         async function caricaMonitor() {
             if(!GITHUB_TOKEN || !GITHUB_USER) return;
             var container = document.getElementById('monitor-lista');
             container.innerHTML = '<p style="text-align:center; color:#38bdf8; font-size:14px;">📡 Contattando il server...</p>';
             
-            // 1. CARICAMENTO QUOTA MENSILE (API BILLING)
-            try {
-                var urlBilling = "https://api.github.com/users/" + GITHUB_USER + "/settings/billing/actions";
-                var resBill = await fetch(urlBilling, { headers: { 'Authorization': 'Bearer ' + GITHUB_TOKEN } });
-                
-                var divQuota = document.getElementById('box-quota');
-                var txtQuota = document.getElementById('quota-valore');
-                var barQuota = document.getElementById('quota-barra');
-                
-                divQuota.style.display = 'block';
-
-                if(resBill.ok) {
-                    var dataBill = await resBill.json();
-                    var usati = Math.round(dataBill.total_minutes_used);
-                    var inclusi = dataBill.included_minutes || 2000;
-                    var rimanenti = inclusi - usati;
-                    var perc = Math.min(100, (usati / inclusi) * 100);
-
-                    txtQuota.innerHTML = "Consumati <b>" + usati + " min</b> su " + inclusi + "<br><span style='font-size: 13px; color: #94a3b8;'>Restano: <strong style='color: " + (rimanenti < 200 ? "#ef4444" : "#10b981") + ";'>" + rimanenti + " min</strong> per questo mese.</span>";
-                    document.getElementById('quota-barra-container').style.display = 'block';
-                    barQuota.style.width = perc + "%";
-                    
-                    if(rimanenti < 200) barQuota.style.background = "#ef4444"; 
-                    else if(rimanenti < 500) barQuota.style.background = "#f59e0b"; 
-                    else barQuota.style.background = "#10b981"; 
-                } else {
-                    txtQuota.innerHTML = "<span style='font-size: 13px; color: #94a3b8;'><i>Dato non disponibile.<br>(La tua repo è Pubblica o il Token non ha i permessi 'read:user' per leggere la fatturazione).</i></span>";
-                    document.getElementById('quota-barra-container').style.display = 'none';
-                }
-            } catch(e) { }
-
-            // 2. CARICAMENTO PROCESSI IN ESECUZIONE (RUNS)
             try {
                 var urlRuns = "https://api.github.com/repos/" + GITHUB_USER + "/" + GITHUB_REPO + "/actions/runs?per_page=12";
                 var resRuns = await fetch(urlRuns, { headers: { 'Authorization': 'Bearer ' + GITHUB_TOKEN } });
@@ -811,7 +842,9 @@
                 var runTime = new Date(runTimeStr).getTime();
                 var cronologia = JSON.parse(localStorage.getItem('hub_cronologia') || '[]');
                 var trovati = cronologia.filter(function(item) { return Math.abs(item.time - runTime) < (3 * 60000); });
+                
                 if(trovati.length === 0) { alert("📄 Dettagli non trovati nel tuo telefono."); return; }
+                
                 var msg = "📊 DETTAGLI REGISTRATI SUL TELEFONO:\n---------------------------------------\n";
                 for(var i=0; i<trovati.length; i++) {
                     var d = trovati[i].dati;
