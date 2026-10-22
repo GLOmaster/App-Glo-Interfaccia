@@ -35,6 +35,7 @@
         .btn-db { background: linear-gradient(135deg, #d97706, #b45309); box-shadow: 0 8px 20px rgba(217, 119, 6, 0.3); }
         
         .btn-genera { background: #0891b2; margin-bottom: 15px; }
+        .btn-avvia-tab { background: linear-gradient(135deg, #0284c7, #0369a1); box-shadow: 0 8px 20px rgba(2, 132, 199, 0.3); }
         .btn-back { background: #475569; font-size: 14px; padding: 12px; margin-bottom: 20px; color: #f1f5f9; text-transform: none; }
         .btn-stop { background: linear-gradient(135deg, #dc2626, #b91c1c); margin-top: 25px; box-shadow: 0 8px 20px rgba(220, 38, 38, 0.3); }
         .btn-reset { background: transparent; border: 1px solid #f59e0b; color: #f59e0b; font-size: 14px; padding: 12px; margin-top: 30px; text-transform: none; }
@@ -209,7 +210,7 @@
             <label>Orario Avvio</label>
             <input type="time" id="tab_ora_avvio">
         </div>
-        <button onclick="avviaTableau()">🚀 Avvia Tableau</button>
+        <button class="btn-avvia-tab" onclick="avviaTableau()">🚀 Avvia Tableau</button>
         <button class="btn-stop" onclick="fermaBot('bot.yml', 'Tableau')">🛑 STOP EMERGENZA</button>
     </div>
 
