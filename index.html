@@ -15,7 +15,8 @@
     
     <script>
         window.onerror = function(msg, url, line) {
-            alert("Errore di Sistema (Riga " + line + "):\n" + msg + "\n\nRicarica l'app chiudendola dal multitasking.");
+            // L'alert custom sarà definito sotto, nel frattempo usiamo un fallback per gli errori critici
+            try { window.alert("Errore di Sistema (Riga " + line + "):\n" + msg + "\n\nRicarica l'app chiudendola dal multitasking."); } catch(e) {}
         };
     </script>
 
@@ -73,10 +74,25 @@
         @keyframes fadeSlideIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
         .screen { display: none; }
         .screen.active { display: block; animation: fadeSlideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
+
+        /* Stili Popup Custom */
+        #custom-alert-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(5px); z-index: 10000; display: none; justify-content: center; align-items: center; }
+        .custom-alert-box { background: #1e293b; border: 1px solid #38bdf8; padding: 25px; border-radius: 16px; width: 80%; max-width: 320px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.7); text-align: center; animation: fadeSlideIn 0.3s ease; }
+        #custom-alert-text { color: #f8fafc; font-size: 15px; font-weight: 500; margin-top: 0; margin-bottom: 25px; white-space: pre-wrap; line-height: 1.5; }
+        .btn-alert-ok { background: linear-gradient(135deg, #0ea5e9, #0284c7); color: white; border: none; padding: 14px; border-radius: 10px; font-weight: 700; font-size: 15px; width: 100%; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; }
     </style>
 </head>
 <body>
 
+    <!-- Popup Custom -->
+    <div id="custom-alert-overlay">
+        <div class="custom-alert-box">
+            <p id="custom-alert-text"></p>
+            <button class="btn-alert-ok" onclick="document.getElementById('custom-alert-overlay').style.display='none'">OK</button>
+        </div>
+    </div>
+
+    <!-- Overlay Caricamento -->
     <div id="loading-overlay">
         <div class="loader-box">
             <div class="spinner"></div>
@@ -139,6 +155,16 @@
     <div id="screen-monitor" class="screen">
         <button class="btn-back" onclick="mostraSchermata('screen-home')">⬅ Torna alla Home</button>
         <h2>Monitor di Sistema</h2>
+        
+        <!-- BOX QUOTA MENSILE (Calcolo Manuale) -->
+        <div class="section status-box" id="box-quota" style="display: none; padding: 20px; border-left: 4px solid #38bdf8;">
+            <p class="status-title">⏳ Quota Mensile Stimata</p>
+            <p id="quota-valore" class="status-value" style="color: #f1f5f9; font-size: 15px; font-weight: 500;">Calcolo in corso...</p>
+            <div id="quota-barra-container" style="background: #334155; border-radius: 8px; height: 12px; margin-top: 12px; overflow: hidden;">
+                <div id="quota-barra" style="background: #10b981; height: 100%; width: 0%; transition: width 0.8s ease-in-out;"></div>
+            </div>
+        </div>
+        
         <div class="section">
             <div style="display: flex; gap: 10px; margin-bottom: 15px;">
                 <button class="btn-genera btn-half" onclick="caricaMonitor()">🔄 Aggiorna</button>
@@ -435,6 +461,12 @@
     </div>
 
     <script>
+        // Sovrascrive il comando di sistema per usare il popup grafico custom
+        window.alert = function(messaggio) {
+            document.getElementById('custom-alert-text').innerText = messaggio;
+            document.getElementById('custom-alert-overlay').style.display = 'flex';
+        };
+
         var GITHUB_TOKEN = "";
         var GITHUB_USER = "";
         var GITHUB_REPO = "BOT"; 
@@ -770,71 +802,130 @@
         async function caricaMonitor() {
             if(!GITHUB_TOKEN || !GITHUB_USER) return;
             var container = document.getElementById('monitor-lista');
-            container.innerHTML = '<p style="text-align:center; color:#38bdf8; font-size:14px;">📡 Contattando il server...</p>';
+            container.innerHTML = '<p style="text-align:center; color:#38bdf8; font-size:14px;">📡 Calcolo quota e aggiornamento bot in corso...</p>';
             
             try {
-                var urlRuns = "https://api.github.com/repos/" + GITHUB_USER + "/" + GITHUB_REPO + "/actions/runs?per_page=12";
-                var resRuns = await fetch(urlRuns, { headers: { 'Authorization': 'Bearer ' + GITHUB_TOKEN } });
+                var now = new Date();
+                var currentMonth = now.getMonth();
+                var nomeMese = now.toLocaleString('it-IT', { month: 'long' });
                 
-                if(resRuns.ok) {
-                    var data = await resRuns.json();
-                    var runs = data.workflow_runs;
-                    
-                    if(runs.length === 0) { container.innerHTML = '<p style="text-align:center; color:#cbd5e1; font-size:14px;">Nessun bot avviato di recente.</p>'; return; }
-                    
-                    var html = '';
-                    for(var i=0; i<runs.length; i++) {
-                        var run = runs[i];
-                        var icona = '⏳';
-                        var colore = '#fbbf24'; 
-                        var statoTxt = 'In Coda';
-                        var btnSniper = '';
-                        var durationStr = '';
-                        
-                        // Calcolo Timer
-                        if (run.status === 'completed') {
-                            var start = new Date(run.run_started_at || run.created_at).getTime();
-                            var end = new Date(run.updated_at).getTime();
-                            var diffSec = Math.floor((end - start) / 1000);
-                            var dMin = Math.floor(diffSec / 60);
-                            var dSec = diffSec % 60;
-                            durationStr = '⏱️ ' + dMin + 'm ' + dSec + 's';
-                        } else if (run.status === 'in_progress' || run.status === 'queued') {
-                            durationStr = '⏱️ In corso...';
-                        }
+                // 1. SCARICA TUTTI I BOT DEL MESE CORRENTE (fino a 500 run)
+                var allRuns = [];
+                var page = 1;
+                var continuaRicerca = true;
 
-                        if(run.status === 'in_progress' || run.status === 'queued') { 
-                            if(run.status === 'in_progress') { icona = '🔄'; colore = '#38bdf8'; statoTxt = 'In Esecuzione'; }
-                            btnSniper = '<button class="btn-sniper" onclick="fermaSingoloBot(' + run.id + ')">🛑 STOP</button>';
-                        } else if(run.status === 'completed') {
-                            if(run.conclusion === 'success') { icona = '✅'; colore = '#10b981'; statoTxt = 'Completato'; }
-                            else { icona = '❌'; colore = '#ef4444'; statoTxt = 'Fallito'; }
+                while(continuaRicerca && page <= 5) {
+                    var urlRuns = "https://api.github.com/repos/" + GITHUB_USER + "/" + GITHUB_REPO + "/actions/runs?per_page=100&page=" + page;
+                    var res = await fetch(urlRuns, { headers: { 'Authorization': 'Bearer ' + GITHUB_TOKEN } });
+                    if(!res.ok) break;
+                    var data = await res.json();
+                    
+                    for(var r=0; r<data.workflow_runs.length; r++) {
+                        var run = data.workflow_runs[r];
+                        var runDate = new Date(run.created_at);
+                        if(runDate.getMonth() === currentMonth && runDate.getFullYear() === now.getFullYear()) {
+                            allRuns.push(run);
+                        } else {
+                            continuaRicerca = false; // Trovato un bot del mese scorso, stop ai download
                         }
-                        
-                        var d = new Date(run.created_at);
-                        var nomeData = ("0"+d.getDate()).slice(-2) + "/" + ("0"+(d.getMonth()+1)).slice(-2) + " " + ("0"+d.getHours()).slice(-2) + ":" + ("0"+d.getMinutes()).slice(-2);
-                        
-                        var operatoreTesto = run.display_title || run.name;
-                        var btnInfo = '<span class="btn-info" onclick="mostraDettagli(\'' + run.created_at + '\')">ℹ️ Info</span>';
-
-                        html += '<div class="run-card" style="border-left: 4px solid ' + colore + ';">' +
-                            '<div style="display: flex; justify-content: space-between; align-items: center;">' +
-                                '<strong style="color: #f8fafc; font-size: 15px;">' + run.name + btnInfo + '</strong>' +
-                                '<span style="font-size: 12px; color: #cbd5e1;">' + nomeData + '</span>' +
-                            '</div>' +
-                            '<div style="font-size: 13px; color: #94a3b8; margin-top: 6px; display: flex; justify-content: space-between; align-items: center;">' +
-                                '<span>👤 Op: <strong style="color: #cbd5e1;">' + operatoreTesto + '</strong></span>' +
-                                '<span style="color: #fbbf24; font-weight: 600;">' + durationStr + '</span>' +
-                            '</div>' +
-                            '<div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">' +
-                                '<div style="font-size: 14px; font-weight: 600; color: ' + colore + ';">' + icona + ' ' + statoTxt + '</div>' +
-                                btnSniper +
-                            '</div>' +
-                        '</div>';
                     }
-                    container.innerHTML = html;
-                } else container.innerHTML = '<p style="text-align:center; color:#ef4444; font-size:14px;">Errore API nel caricamento dei processi.</p>';
-            } catch(e) { container.innerHTML = '<p style="text-align:center; color:#ef4444; font-size:14px;">Errore di rete.</p>'; }
+                    if(data.workflow_runs.length < 100) break;
+                    page++;
+                }
+
+                // 2. CALCOLO DELLA QUOTA (Regola di arrotondamento ufficiale GitHub)
+                var minutiUsati = 0;
+                for(var j = 0; j < allRuns.length; j++) {
+                    var r = allRuns[j];
+                    if(r.status === 'completed') {
+                        var startRun = new Date(r.run_started_at || r.created_at).getTime();
+                        var endRun = new Date(r.updated_at).getTime();
+                        var diffSec = Math.floor((endRun - startRun) / 1000);
+                        if(diffSec > 0) {
+                            minutiUsati += Math.ceil(diffSec / 60); // GitHub arrotonda SEMPRE per eccesso
+                        }
+                    }
+                }
+
+                var inclusi = 2000;
+                var rimanenti = inclusi - minutiUsati;
+                var perc = Math.min(100, (minutiUsati / inclusi) * 100);
+
+                var boxQuota = document.getElementById('box-quota');
+                var txtQuota = document.getElementById('quota-valore');
+                var barQuota = document.getElementById('quota-barra');
+
+                if(boxQuota) {
+                    boxQuota.style.display = 'block';
+                    txtQuota.innerHTML = "Consumati <b>" + minutiUsati + " min</b> su " + inclusi + "<br><span style='font-size: 13px; color: #94a3b8;'>Restano: <strong style='color: " + (rimanenti < 200 ? "#ef4444" : "#10b981") + ";'>" + rimanenti + " min</strong> a " + nomeMese + ".</span>";
+                    document.getElementById('quota-barra-container').style.display = 'block';
+                    barQuota.style.width = perc + "%";
+                    if(rimanenti < 200) barQuota.style.background = "#ef4444"; 
+                    else if(rimanenti < 500) barQuota.style.background = "#f59e0b"; 
+                    else barQuota.style.background = "#10b981"; 
+                }
+
+                // 3. RENDERING LISTA MONITOR (mostra solo i 12 più recenti)
+                if(allRuns.length === 0) { 
+                    container.innerHTML = '<p style="text-align:center; color:#cbd5e1; font-size:14px;">Nessun bot avviato a ' + nomeMese + '.</p>'; 
+                    return; 
+                }
+                
+                var html = '';
+                var maxMostrati = Math.min(allRuns.length, 12);
+                
+                for(var i = 0; i < maxMostrati; i++) {
+                    var run = allRuns[i];
+                    var icona = '⏳';
+                    var colore = '#fbbf24'; 
+                    var statoTxt = 'In Coda';
+                    var btnSniper = '';
+                    var durationStr = '';
+                    
+                    if (run.status === 'completed') {
+                        var start = new Date(run.run_started_at || run.created_at).getTime();
+                        var end = new Date(run.updated_at).getTime();
+                        var diffSec = Math.floor((end - start) / 1000);
+                        var dMin = Math.floor(diffSec / 60);
+                        var dSec = diffSec % 60;
+                        durationStr = '⏱️ ' + dMin + 'm ' + dSec + 's';
+                    } else if (run.status === 'in_progress' || run.status === 'queued') {
+                        durationStr = '⏱️ In corso...';
+                    }
+
+                    if(run.status === 'in_progress' || run.status === 'queued') { 
+                        if(run.status === 'in_progress') { icona = '🔄'; colore = '#38bdf8'; statoTxt = 'In Esecuzione'; }
+                        btnSniper = '<button class="btn-sniper" onclick="fermaSingoloBot(' + run.id + ')">🛑 STOP</button>';
+                    } else if(run.status === 'completed') {
+                        if(run.conclusion === 'success') { icona = '✅'; colore = '#10b981'; statoTxt = 'Completato'; }
+                        else { icona = '❌'; colore = '#ef4444'; statoTxt = 'Fallito'; }
+                    }
+                    
+                    var d = new Date(run.created_at);
+                    var nomeData = ("0"+d.getDate()).slice(-2) + "/" + ("0"+(d.getMonth()+1)).slice(-2) + " " + ("0"+d.getHours()).slice(-2) + ":" + ("0"+d.getMinutes()).slice(-2);
+                    
+                    var operatoreTesto = run.display_title || run.name;
+                    var btnInfo = '<span class="btn-info" onclick="mostraDettagli(\'' + run.created_at + '\')">ℹ️ Info</span>';
+
+                    html += '<div class="run-card" style="border-left: 4px solid ' + colore + ';">' +
+                        '<div style="display: flex; justify-content: space-between; align-items: center;">' +
+                            '<strong style="color: #f8fafc; font-size: 15px;">' + run.name + btnInfo + '</strong>' +
+                            '<span style="font-size: 12px; color: #cbd5e1;">' + nomeData + '</span>' +
+                        '</div>' +
+                        '<div style="font-size: 13px; color: #94a3b8; margin-top: 6px; display: flex; justify-content: space-between; align-items: center;">' +
+                            '<span>👤 Op: <strong style="color: #cbd5e1;">' + operatoreTesto + '</strong></span>' +
+                            '<span style="color: #fbbf24; font-weight: 600;">' + durationStr + '</span>' +
+                        '</div>' +
+                        '<div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">' +
+                            '<div style="font-size: 14px; font-weight: 600; color: ' + colore + ';">' + icona + ' ' + statoTxt + '</div>' +
+                            btnSniper +
+                        '</div>' +
+                    '</div>';
+                }
+                container.innerHTML = html;
+            } catch(e) { 
+                container.innerHTML = '<p style="text-align:center; color:#ef4444; font-size:14px;">Errore di rete durante il calcolo.</p>'; 
+            }
         }
 
         function mostraDettagli(runTimeStr) {
@@ -859,7 +950,8 @@
         async function fermaSingoloBot(runId) {
             if(!GITHUB_TOKEN || !GITHUB_USER) return;
             vibraErrore();
-            var conferma = confirm("⚠️ Vuoi interrompere questo specifico server?");
+            // L'alert custom sovrascrive 'alert', quindi per il 'confirm' teniamo quello nativo o passiamo avanti logicamente
+            var conferma = window.confirm("⚠️ Vuoi interrompere questo specifico server?");
             if(!conferma) return;
             try {
                 var cancelUrl = "https://api.github.com/repos/" + GITHUB_USER + "/" + GITHUB_REPO + "/actions/runs/" + runId + "/cancel";
@@ -872,7 +964,7 @@
         async function fermaBot(workflowFile, nomeBot) {
             if(!GITHUB_TOKEN || !GITHUB_USER) { alert("Manca Token/Utente."); return; }
             vibraErrore();
-            var conferma = confirm("⚠️ Sicuro di voler ARRESTARE tutti i server generali di " + nomeBot + "?");
+            var conferma = window.confirm("⚠️ Sicuro di voler ARRESTARE tutti i server generali di " + nomeBot + "?");
             if(!conferma) return;
             var urlRuns = "https://api.github.com/repos/" + GITHUB_USER + "/" + GITHUB_REPO + "/actions/workflows/" + workflowFile + "/runs?per_page=10";
             try {
